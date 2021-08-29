@@ -1,0 +1,19 @@
+[package]
+name = "pxtone"
+description = "High level bindings to pxtone for Rust"
+repository = "https://github.com/PieKing1215/rust-pxtone"
+version = "0.1.0"
+authors = ["PieKing1215"]
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["pxtone", "audio", "parsing"]
+categories = ["multimedia::audio", "parser-implementations"]
+edition = "2018"
+
+[dependencies]
+pxtone-sys = "0.1"
+num-traits = "0.2"
+num-derive = "0.3"
+
+[dev-dependencies]
+cpal = "0.13"
