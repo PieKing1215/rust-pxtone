@@ -1,4 +1,4 @@
-<h1>rust-pxtone-sys<br>
+<h1>rust-pxtone<br>
   <a href="https://github.com/PieKing1215/rust-pxtone/actions/workflows/rust_build_test.yml"><img alt="GitHub Workflow Status" src="https://img.shields.io/github/workflow/status/PieKing1215/rust-pxtone/Rust%20Build+Test"></a>
   <a href="https://crates.io/crates/pxtone"><img alt="Crates.io" src="https://img.shields.io/crates/v/pxtone"></a>
   <a href="https://github.com/PieKing1215/rust-pxtone/commits/master"><img alt="GitHub commits since latest release" src="https://img.shields.io/github/commits-since/PieKing1215/rust-pxtone/latest"></a>
