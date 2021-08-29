@@ -39,14 +39,14 @@ pub enum Error {
 
 impl Error {
     pub fn from_raw(value: pxtnERR) -> Result<(), Error> {
-        Self::from_i32(value).map_or(Ok(()), |e| Err(e))
+        Self::from_i32(value as i32).map_or(Ok(()), |e| Err(e))
     }
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         unsafe {
-            let msg = self.to_i32().map(|err| CStr::from_ptr(pxtnError_get_string(err)).to_str().unwrap()).unwrap_or("???");
+            let msg = self.to_i32().map(|err| CStr::from_ptr(pxtnError_get_string(err as pxtnERR)).to_str().unwrap()).unwrap_or("???");
             write!(f, "{}", msg)
         }
     }
