@@ -18,7 +18,6 @@ impl PxTone {
         }
 
         Error::from_raw(unsafe { serv.read(&mut descriptor) })?;
-        Error::from_raw(unsafe { serv.tones_ready() })?;
 
         Ok(Self {
             service: serv,
@@ -27,6 +26,7 @@ impl PxTone {
 
     pub fn set_audio_format(&mut self, channels: u8, sample_rate: u32) -> Result<(), Error> {
         if unsafe { self.service.set_destination_quality(channels as i32, sample_rate as i32) } {
+            Error::from_raw(unsafe { self.service.tones_ready() })?;
             Ok(())
         }else{
             Err(Error::VOID)
@@ -42,7 +42,7 @@ impl PxTone {
             meas_end: 0,
             meas_repeat: 0,
             fadein_sec: 0.0,
-            flags: 0,
+            flags: pxtone_sys::pxtnVOMITPREPFLAG_loop,
             master_volume: 0.5,
         };
 
@@ -64,6 +64,12 @@ impl PxTone {
     pub fn get_total_samples(&mut self) -> u32 {
         unsafe {
             self.service.moo_get_total_sample() as u32
+        }
+    }
+
+    pub fn is_done_sampling(&self) -> bool {
+        unsafe {
+            self.service.moo_is_end_vomit()
         }
     }
 }

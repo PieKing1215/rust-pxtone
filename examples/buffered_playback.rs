@@ -57,8 +57,9 @@ fn main() {
     ).expect("Failed to start audio stream");
     stream.play().expect("Failed to play audio");
 
-    println!("Sleeping for {:.2}s", total_samples as f64 / sample_rate as f64);
-    std::thread::sleep(std::time::Duration::from_secs_f64(total_samples as f64 / sample_rate as f64));
+    let play_time = total_samples as f64 / sample_rate as f64;
+    println!("Sleeping for {:.2}s", play_time);
+    std::thread::sleep(std::time::Duration::from_secs_f64(play_time));
     println!("Done!");
 }
 
