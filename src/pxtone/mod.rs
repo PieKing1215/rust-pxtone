@@ -1,4 +1,2 @@
-mod service;
-pub use service::*;
-
-pub mod error;
+pub mod og_impl;
+pub mod interface;

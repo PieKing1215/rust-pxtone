@@ -1,5 +1,6 @@
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+use pxtone::{og_impl::service::PxToneService, interface::{moo::Moo, io::PxToneServiceIO}};
 
 fn main() {
     // set up audio device
@@ -11,7 +12,7 @@ fn main() {
 
     // init pxtone
     let bytes = include_bytes!("sample.ptcop");
-    let mut pxtone = pxtone::PxTone::read_bytes(bytes).expect("read_bytes failed");
+    let mut pxtone = PxToneService::read_bytes(bytes).expect("read_bytes failed");
     pxtone.set_audio_format(config.channels() as u8, config.sample_rate().0).expect("set_audio_format failed");
 
     // print some info
@@ -20,7 +21,7 @@ fn main() {
 
     // prepare to moo
     pxtone.prepare_sample().expect("prepare_sample failed");
-    let total_samples = pxtone.get_total_samples();
+    let total_samples = pxtone.total_samples();
     println!("pxtone.get_total_samples() = {}", total_samples);
     let mut sn = 10000;
     sn = sn - (sn % 4);
