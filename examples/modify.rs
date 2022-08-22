@@ -2,14 +2,22 @@ use std::path::Path;
 
 use pxtone::{og_impl::service::PxToneService, interface::{io::PxToneServiceIO, service::PxTone, event::{EventListMut, Event, EventKind}, unit::Unit}};
 
-
 fn main() {
     // load ptcop file
     let bytes = include_bytes!("sample.ptcop");
     let mut pxtone = PxToneService::read_bytes(bytes).expect("read_bytes failed");
 
+    println!("Editing \"{}\"", pxtone.name());
+    
+    // change project name/comment
+    pxtone.set_name(format!("{}!", pxtone.name())).unwrap();
+    pxtone.set_comment("this is\r\nthe new comment".into()).unwrap();
+
+    // change project tempo
+    pxtone.set_beat_tempo(pxtone.beat_tempo() as f32 * 0.75);
+
     // rename the first unit
-    pxtone.units_mut()[0].set_name("grandma zone".into()).unwrap();
+    pxtone.units_mut()[0].set_name("supreme unit".into()).unwrap();
     
     // edit some events
     for eve in pxtone.event_list_mut().events_mut() {

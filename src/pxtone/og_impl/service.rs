@@ -66,6 +66,126 @@ impl PxTone for PxToneService {
     type EventList = PxToneEventList;
     type EventListMut = PxToneEventListMut;
 
+    fn beat_num(&self) -> i32 {
+        unsafe { (*self.service.master)._beat_num }
+    }
+
+    fn set_beat_num(&mut self, beat_num: i32) {
+        unsafe { (*self.service.master)._beat_num = beat_num }
+    }
+
+    fn beat_tempo(&self) -> f32 {
+        unsafe { (*self.service.master)._beat_tempo }
+    }
+
+    fn set_beat_tempo(&mut self, beat_tempo: f32) {
+        unsafe { (*self.service.master)._beat_tempo = beat_tempo }
+    }
+
+    fn beat_clock(&self) -> i32 {
+        unsafe { (*self.service.master)._beat_clock }
+    }
+
+    fn set_beat_clock(&mut self, beat_clock: i32) {
+        unsafe { (*self.service.master).set_beat_clock(beat_clock) }
+    }
+
+    fn num_measures(&self) -> i32 {
+        unsafe { (*self.service.master)._meas_num }
+    }
+
+    fn set_num_measures(&mut self, num_measures: i32) {
+        unsafe { (*self.service.master).set_meas_num(num_measures) }
+    }
+
+    fn repeat_measure(&self) -> i32 {
+        unsafe { (*self.service.master)._repeat_meas }
+    }
+
+    fn set_repeat_measure(&mut self, repeat_measure: i32) {
+        unsafe { (*self.service.master).set_repeat_meas(repeat_measure) }
+    }
+
+    fn last_measure(&self) -> i32 {
+        unsafe { (*self.service.master)._last_meas }
+    }
+
+    fn set_last_measure(&mut self, last_measure: i32) {
+        unsafe { (*self.service.master).set_last_meas(last_measure) }
+    }
+
+    fn name(&self) -> String {
+        unsafe {
+            if !(*self.service.text).is_name_buf() {
+                return "".into();
+            }
+
+            let mut len = 0;
+            let data = (*self.service.text).get_name_buf(&mut len) as *const u8;
+            let arr = slice::from_raw_parts(data, len as usize);
+            
+            // remove interior NULL bytes
+            let mut bytes = Vec::new();
+            for b in arr {
+                if *b == '\0' as u8 {
+                    break;
+                }
+                bytes.push(*b);
+            }
+
+            // add our own NULL byte
+            bytes.push('\0' as u8);
+
+            CString::from_vec_with_nul_unchecked(bytes).to_owned().to_string_lossy().into()
+        }
+    }
+
+    fn set_name(&mut self, name: String) -> Result<(), ()> {
+        unsafe {
+            if (*self.service.text).set_name_buf(name.as_ptr().cast(), name.len() as i32) {
+                Ok(())
+            } else {
+                Err(())
+            }
+        }
+    }
+
+    fn comment(&self) -> String {
+        unsafe {
+            if !(*self.service.text).is_comment_buf() {
+                return "".into();
+            }
+
+            let mut len = 0;
+            let data = (*self.service.text).get_comment_buf(&mut len) as *const u8;
+            let arr = slice::from_raw_parts(data, len as usize);
+            
+            // remove interior NULL bytes
+            let mut bytes = Vec::new();
+            for b in arr {
+                if *b == '\0' as u8 {
+                    break;
+                }
+                bytes.push(*b);
+            }
+
+            // add our own NULL byte
+            bytes.push('\0' as u8);
+
+            CString::from_vec_with_nul_unchecked(bytes).to_owned().to_string_lossy().into()
+        }
+    }
+
+    fn set_comment(&mut self, comment: String) -> Result<(), ()> {
+        unsafe {
+            if (*self.service.text).set_comment_buf(comment.as_ptr().cast(), comment.len() as i32) {
+                Ok(())
+            } else {
+                Err(())
+            }
+        }
+    }
+
     fn units(&self) -> Units<Self::Unit> {
         let raw = unsafe { slice::from_raw_parts(self.service._units, self.service._unit_num.try_into().unwrap()) };
         let v = raw.iter().map(|r| PxToneUnit::new(*r)).collect::<Vec<_>>();
@@ -85,6 +205,8 @@ impl PxTone for PxToneService {
     fn event_list_mut(&mut self) -> Self::EventListMut {
         PxToneEventListMut::new(self.service.evels)
     }
+
+    
 }
 
 impl Moo<Error> for PxToneService {
