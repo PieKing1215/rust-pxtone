@@ -14,14 +14,14 @@ use pxtone::{
 fn main() {
     // load ptcop file
     let bytes = include_bytes!("sample.ptcop");
-    let mut pxtone = PxToneService::read_bytes(bytes).expect("read_bytes failed");
 
-    do_stuff(&mut pxtone).unwrap();
-
-    println!("Wrote to out.ptcop!");
+    do_stuff::<PxToneService>(bytes).unwrap();
 }
 
-fn do_stuff<PXTN: PxTone + PxToneServiceIO>(pxtone: &mut PXTN) -> Result<(), PXTN::Error> {
+// This stuff is in a separate function just to demonstrate how everything is trait based
+fn do_stuff<PXTN: PxTone + PxToneServiceIO>(bytes: &[u8]) -> Result<(), PXTN::Error> {
+    let mut pxtone = PXTN::read_bytes(bytes).expect("read_bytes failed");
+
     println!("Editing \"{}\"", pxtone.name());
 
     // change project name/comment
@@ -135,6 +135,8 @@ fn do_stuff<PXTN: PxTone + PxToneServiceIO>(pxtone: &mut PXTN) -> Result<(), PXT
 
     // write file
     pxtone.write_file(Path::new("out.ptcop"))?;
+
+    println!("Wrote to out.ptcop!");
 
     Ok(())
 }

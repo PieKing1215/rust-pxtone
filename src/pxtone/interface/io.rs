@@ -1,8 +1,8 @@
-use std::path::PathBuf;
+use std::{fmt::Debug, path::PathBuf};
 
 /// Trait that covers reading/writing the project
 pub trait PxToneServiceIO {
-    type Error;
+    type Error: Debug;
 
     fn read_bytes(bytes: &[u8]) -> Result<Self, Self::Error>
     where
