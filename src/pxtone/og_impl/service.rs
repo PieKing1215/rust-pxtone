@@ -1,19 +1,26 @@
 
-use std::{convert::TryInto, slice, path::PathBuf, ffi::{CStr, CString}, fs::File, marker::PhantomData};
+use std::{convert::TryInto, slice, path::PathBuf, ffi::{CStr, CString}, fs::File};
 
 use pxtone_sys::{pxtnDescriptor, pxtnService, pxtnVOMITPREPARATION, fopen, fclose, pxtnWoice};
 
-use crate::interface::{moo::{Moo, Fade}, service::PxTone, unit::{Units, UnitsMut}, io::PxToneServiceIO};
+use crate::{interface::{moo::{Moo, Fade}, service::PxTone, unit::{Units, UnitsMut}, io::PxToneServiceIO}, pxtone::util::BoxOrMut};
 
 use super::{error::Error, unit::PxToneUnit, event::{PxToneEventList, PxToneEventListMut}, woice::{PxToneWoices}};
 pub struct PxToneService<'p> {
-    _phantom: PhantomData<&'p ()>,
-    service: pxtnService,
+    service: BoxOrMut<'p, pxtnService>,
 }
 
 impl<'p> PxToneService<'p> {
     pub fn is_valid(&self) -> bool {
         unsafe { self.service.moo_is_valid_data() }
+    }
+}
+
+impl<'p, T: Into<BoxOrMut<'p, pxtnService>>> From<T> for PxToneService<'p> {
+    fn from(service: T) -> Self {
+        Self {
+            service: service.into(),
+        }
     }
 }
 
@@ -31,10 +38,7 @@ impl<'p> PxToneServiceIO for PxToneService<'p> {
 
         Error::from_raw(unsafe { serv.read(&mut descriptor) })?;
 
-        Ok(Self {
-            _phantom: PhantomData,
-            service: serv,
-        })
+        Ok(serv.into())
     }
 
     fn write_file(&mut self, path: impl Into<PathBuf>) -> Result<Vec<u8>, Self::Error> {

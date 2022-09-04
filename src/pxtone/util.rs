@@ -5,7 +5,7 @@ use std::ops::{Deref, DerefMut};
 /// `Deref`s into `&T`
 pub enum BoxOrRef<'a, T: 'a + ?Sized> {
     Ref(&'a T),
-    Own(Box<T>)
+    Box(Box<T>)
 }
 
 impl<'a, T: 'a> Deref for BoxOrRef<'a, T> {
@@ -14,8 +14,20 @@ impl<'a, T: 'a> Deref for BoxOrRef<'a, T> {
     fn deref(&self) -> &T {
         match self {
             Self::Ref(r) => r,
-            Self::Own(ref o) => o,
+            Self::Box(ref o) => o,
         }
+    }
+}
+
+impl<'a, T: 'a> From<T> for BoxOrRef<'a, T> {
+    fn from(v: T) -> Self {
+        Self::Box(Box::new(v))
+    }
+}
+
+impl<'a, T: 'a> From<&'a T> for BoxOrRef<'a, T> {
+    fn from(v: &'a T) -> Self {
+        Self::Ref(v)
     }
 }
 
@@ -24,7 +36,7 @@ impl<'a, T: 'a> Deref for BoxOrRef<'a, T> {
 /// `Deref`s into `&mut T`
 pub enum BoxOrMut<'a, T: 'a + ?Sized> {
     Ref(&'a mut T),
-    Own(Box<T>)
+    Box(Box<T>)
 }
 
 impl<'a, T: 'a> Deref for BoxOrMut<'a, T> {
@@ -33,7 +45,7 @@ impl<'a, T: 'a> Deref for BoxOrMut<'a, T> {
     fn deref(&self) -> &Self::Target {
         match self {
             Self::Ref(r) => r,
-            Self::Own(o) => o,
+            Self::Box(o) => o,
         }
     }
 }
@@ -42,7 +54,19 @@ impl<'a, T: 'a> DerefMut for BoxOrMut<'a, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         match self {
             Self::Ref(r) => r,
-            Self::Own(o) => o,
+            Self::Box(o) => o,
         }
+    }
+}
+
+impl<'a, T: 'a> From<T> for BoxOrMut<'a, T> {
+    fn from(v: T) -> Self {
+        Self::Box(Box::new(v))
+    }
+}
+
+impl<'a, T: 'a> From<&'a mut T> for BoxOrMut<'a, T> {
+    fn from(v: &'a mut T) -> Self {
+        Self::Ref(v)
     }
 }
