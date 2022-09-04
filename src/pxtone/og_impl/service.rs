@@ -14,7 +14,7 @@ use crate::{
     interface::{
         io::PxToneServiceIO,
         moo::{Fade, Moo},
-        service::PxTone,
+        service::{InvalidText, PxTone},
         unit::{Units, UnitsMut},
     },
     pxtone::util::BoxOrMut,
@@ -30,6 +30,7 @@ impl<'p> PxToneService<'p> {
         &mut self.service
     }
 
+    #[must_use]
     pub fn is_valid(&self) -> bool {
         unsafe { self.service.moo_is_valid_data() }
     }
@@ -180,12 +181,12 @@ impl<'p> PxTone for PxToneService<'p> {
         }
     }
 
-    fn set_name(&mut self, name: String) -> Result<(), ()> {
+    fn set_name(&mut self, name: String) -> Result<(), InvalidText> {
         unsafe {
             if (*self.service.text).set_name_buf(name.as_ptr().cast(), name.len() as i32) {
                 Ok(())
             } else {
-                Err(())
+                Err(InvalidText)
             }
         }
     }
@@ -218,12 +219,12 @@ impl<'p> PxTone for PxToneService<'p> {
         }
     }
 
-    fn set_comment(&mut self, comment: String) -> Result<(), ()> {
+    fn set_comment(&mut self, comment: String) -> Result<(), InvalidText> {
         unsafe {
             if (*self.service.text).set_comment_buf(comment.as_ptr().cast(), comment.len() as i32) {
                 Ok(())
             } else {
-                Err(())
+                Err(InvalidText)
             }
         }
     }

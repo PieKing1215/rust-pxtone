@@ -1,8 +1,21 @@
+use std::fmt;
+
 use super::{
     event::{EventList, EventListMut},
     unit::{Unit, Units, UnitsMut},
     woice::{Woices, WoicesMut},
 };
+
+#[derive(Debug)]
+pub struct InvalidText;
+
+impl fmt::Display for InvalidText {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Invalid Text")
+    }
+}
+
+impl std::error::Error for InvalidText {}
 
 /// Base trait for the overall state of pxtone
 pub trait PxTone {
@@ -31,10 +44,10 @@ pub trait PxTone {
     fn set_last_measure(&mut self, last_measure: i32);
 
     fn name(&self) -> String;
-    fn set_name(&mut self, name: String) -> Result<(), ()>;
+    fn set_name(&mut self, name: String) -> Result<(), InvalidText>;
 
     fn comment(&self) -> String;
-    fn set_comment(&mut self, comment: String) -> Result<(), ()>;
+    fn set_comment(&mut self, comment: String) -> Result<(), InvalidText>;
 
     fn units(&self) -> Units<Self::Unit>;
     fn units_mut(&mut self) -> UnitsMut<Self::Unit>;

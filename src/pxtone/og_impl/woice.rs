@@ -11,11 +11,14 @@ use pxtone_sys::{
 };
 
 use crate::{
-    interface::woice::{
-        PTNEnvelopePoint, PTNOscillator, PTNUnit, PTNWaveType, PTVCoordinateWave,
-        PTVCoordinateWavePoint, PTVOvertoneWave, PTVOvertoneWaveTone, PTVWaveType, SingleVoice,
-        Voice, VoiceOGGV, VoicePCM, VoicePTN, VoicePTV, Woice, WoiceOGGV, WoicePCM, WoicePTN,
-        WoicePTV, WoiceType, Woices, WoicesMut,
+    interface::{
+        service::InvalidText,
+        woice::{
+            PTNEnvelopePoint, PTNOscillator, PTNUnit, PTNWaveType, PTVCoordinateWave,
+            PTVCoordinateWavePoint, PTVOvertoneWave, PTVOvertoneWaveTone, PTVWaveType, SingleVoice,
+            Voice, VoiceOGGV, VoicePCM, VoicePTN, VoicePTV, Woice, WoiceOGGV, WoicePCM, WoicePTN,
+            WoicePTV, WoiceType, Woices, WoicesMut,
+        },
     },
     pxtone::util::{BoxOrMut, BoxOrRef},
 };
@@ -49,12 +52,12 @@ impl Woice for pxtnWoice {
         }
     }
 
-    fn set_name(&mut self, name: String) -> Result<(), ()> {
+    fn set_name(&mut self, name: String) -> Result<(), InvalidText> {
         unsafe {
             if self.set_name_buf(name.as_ptr().cast(), name.len() as i32) {
                 Ok(())
             } else {
-                Err(())
+                Err(InvalidText)
             }
         }
     }
@@ -397,6 +400,7 @@ pub struct PxToneWoices<'p, T: Borrow<pxtnWoice>> {
 }
 
 impl<'p, T: Borrow<pxtnWoice>> PxToneWoices<'p, T> {
+    #[must_use]
     pub fn new(woices: Vec<T>) -> Self {
         Self { _phantom: PhantomData, woices }
     }

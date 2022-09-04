@@ -2,7 +2,7 @@ use std::{ffi::CString, slice};
 
 use pxtone_sys::pxtnUnit;
 
-use crate::interface::unit::Unit;
+use crate::interface::{service::InvalidText, unit::Unit};
 
 pub struct PxToneUnit {
     raw: &'static mut pxtnUnit,
@@ -63,7 +63,7 @@ impl Unit for PxToneUnit {
         }
     }
 
-    fn set_name(&mut self, name: String) -> Result<(), ()> {
+    fn set_name(&mut self, name: String) -> Result<(), InvalidText> {
         unsafe {
             if self
                 .raw
@@ -71,7 +71,7 @@ impl Unit for PxToneUnit {
             {
                 Ok(())
             } else {
-                Err(())
+                Err(InvalidText)
             }
         }
     }

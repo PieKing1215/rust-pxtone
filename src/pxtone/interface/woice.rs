@@ -2,6 +2,8 @@ use std::{borrow::Borrow, convert::Infallible, marker::PhantomData};
 
 use crate::pxtone::util::{BoxOrMut, BoxOrRef};
 
+use super::service::InvalidText;
+
 // TODO: this file has too many similarly named trait definitions in it, split into a couple files
 
 pub enum WoiceType<
@@ -41,7 +43,7 @@ pub type WoiceTypeMut<'a> = WoiceType<
 
 pub trait Woice {
     fn name(&self) -> String;
-    fn set_name(&mut self, name: String) -> Result<(), ()>;
+    fn set_name(&mut self, name: String) -> Result<(), InvalidText>;
 
     fn woice_type(&self) -> WoiceTypeRef;
     fn woice_type_mut(&mut self) -> WoiceTypeMut;

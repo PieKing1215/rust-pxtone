@@ -5,7 +5,7 @@ use std::{
 
 use super::{
     event::{EventList, EventListMut},
-    service::PxTone,
+    service::{InvalidText, PxTone},
     woice::{Woices, WoicesMut},
 };
 
@@ -17,7 +17,7 @@ pub trait Unit {
     fn set_muted(&mut self, muted: bool);
 
     fn name(&self) -> String;
-    fn set_name(&mut self, name: String) -> Result<(), ()>;
+    fn set_name(&mut self, name: String) -> Result<(), InvalidText>;
 }
 
 pub struct Units<'a, U: Unit> {
