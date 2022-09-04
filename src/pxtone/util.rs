@@ -1,4 +1,4 @@
-use std::ops::{Deref, DerefMut};
+use std::{ops::{Deref, DerefMut}, borrow::{Borrow, BorrowMut}};
 
 /// Wrapper around either a `Box<T>` or `&T`
 /// 
@@ -8,7 +8,7 @@ pub enum BoxOrRef<'a, T: 'a + ?Sized> {
     Box(Box<T>)
 }
 
-impl<'a, T: 'a> Deref for BoxOrRef<'a, T> {
+impl<'a, T: 'a + ?Sized> Deref for BoxOrRef<'a, T> {
     type Target = T;
 
     fn deref(&self) -> &T {
@@ -19,13 +19,19 @@ impl<'a, T: 'a> Deref for BoxOrRef<'a, T> {
     }
 }
 
+impl<'a, T: 'a + ?Sized> Borrow<T> for BoxOrRef<'a, T> {
+    fn borrow(&self) -> &T {
+        self
+    }
+}
+
 impl<'a, T: 'a> From<T> for BoxOrRef<'a, T> {
     fn from(v: T) -> Self {
         Self::Box(Box::new(v))
     }
 }
 
-impl<'a, T: 'a> From<&'a T> for BoxOrRef<'a, T> {
+impl<'a, T: 'a + ?Sized> From<&'a T> for BoxOrRef<'a, T> {
     fn from(v: &'a T) -> Self {
         Self::Ref(v)
     }
@@ -39,7 +45,7 @@ pub enum BoxOrMut<'a, T: 'a + ?Sized> {
     Box(Box<T>)
 }
 
-impl<'a, T: 'a> Deref for BoxOrMut<'a, T> {
+impl<'a, T: 'a + ?Sized> Deref for BoxOrMut<'a, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -50,12 +56,24 @@ impl<'a, T: 'a> Deref for BoxOrMut<'a, T> {
     }
 }
 
-impl<'a, T: 'a> DerefMut for BoxOrMut<'a, T> {
+impl<'a, T: 'a + ?Sized> DerefMut for BoxOrMut<'a, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         match self {
             Self::Ref(r) => r,
             Self::Box(o) => o,
         }
+    }
+}
+
+impl<'a, T: 'a + ?Sized> Borrow<T> for BoxOrMut<'a, T> {
+    fn borrow(&self) -> &T {
+        self
+    }
+}
+
+impl<'a, T: 'a + ?Sized> BorrowMut<T> for BoxOrMut<'a, T> {
+    fn borrow_mut(&mut self) -> &mut T {
+        self
     }
 }
 
@@ -65,7 +83,7 @@ impl<'a, T: 'a> From<T> for BoxOrMut<'a, T> {
     }
 }
 
-impl<'a, T: 'a> From<&'a mut T> for BoxOrMut<'a, T> {
+impl<'a, T: 'a + ?Sized> From<&'a mut T> for BoxOrMut<'a, T> {
     fn from(v: &'a mut T) -> Self {
         Self::Ref(v)
     }
