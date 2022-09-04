@@ -2,6 +2,7 @@
 
 use super::{unit::{Unit, Units, UnitsMut}, event::{EventList, EventListMut}, woice::{Woices, WoicesMut}};
 
+/// Base trait for the overall state of pxtone
 pub trait PxTone {
     type Unit: Unit + Sized;
     type EventList: EventList + Sized;

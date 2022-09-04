@@ -3,6 +3,9 @@ pub enum Fade {
     In, Out,
 }
 
+/// Trait that covers everything related to playing/sampling the song
+/// 
+/// (This was called "mooing" by Pixel)
 pub trait Moo<E> {
     fn set_audio_format(&mut self, channels: u8, sample_rate: u32) -> Result<(), E>;
 

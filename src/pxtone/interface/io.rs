@@ -1,6 +1,6 @@
 use std::{path::{PathBuf}};
 
-
+/// Trait that covers reading/writing the project
 pub trait PxToneServiceIO {
     type Error;
 
