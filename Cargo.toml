@@ -8,7 +8,7 @@ license = "MIT OR Apache-2.0"
 readme = "README.md"
 keywords = ["pxtone", "audio", "parsing"]
 categories = ["multimedia::audio", "parser-implementations"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 pxtone-sys = "0.1.2"
