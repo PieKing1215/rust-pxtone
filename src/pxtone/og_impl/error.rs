@@ -3,7 +3,7 @@ use std::ffi::CStr;
 
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::{FromPrimitive, ToPrimitive};
-use pxtone_sys::{pxtnError_get_string, pxtnERR};
+use pxtone_sys::{pxtnERR, pxtnError_get_string};
 
 #[derive(Debug, Copy, Clone, FromPrimitive, ToPrimitive)]
 pub enum Error {
@@ -46,7 +46,14 @@ impl Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         unsafe {
-            let msg = self.to_i32().map(|err| CStr::from_ptr(pxtnError_get_string(err as pxtnERR)).to_str().unwrap()).unwrap_or("???");
+            let msg = self
+                .to_i32()
+                .map(|err| {
+                    CStr::from_ptr(pxtnError_get_string(err as pxtnERR))
+                        .to_str()
+                        .unwrap()
+                })
+                .unwrap_or("???");
             write!(f, "{}", msg)
         }
     }

@@ -1,11 +1,26 @@
+use std::{
+    convert::TryInto,
+    ffi::{CStr, CString},
+    fs::File,
+    path::PathBuf,
+    slice,
+};
 
-use std::{convert::TryInto, slice, path::PathBuf, ffi::{CStr, CString}, fs::File};
+use pxtone_sys::{
+    fclose, fopen, pxtnDescriptor, pxtnEvelist, pxtnService, pxtnVOMITPREPARATION, pxtnWoice,
+};
 
-use pxtone_sys::{pxtnDescriptor, pxtnService, pxtnVOMITPREPARATION, fopen, fclose, pxtnWoice, pxtnEvelist};
+use crate::{
+    interface::{
+        io::PxToneServiceIO,
+        moo::{Fade, Moo},
+        service::PxTone,
+        unit::{Units, UnitsMut},
+    },
+    pxtone::util::BoxOrMut,
+};
 
-use crate::{interface::{moo::{Moo, Fade}, service::PxTone, unit::{Units, UnitsMut}, io::PxToneServiceIO}, pxtone::util::BoxOrMut};
-
-use super::{error::Error, unit::PxToneUnit, event::{PxToneEventList}, woice::{PxToneWoices}};
+use super::{error::Error, event::PxToneEventList, unit::PxToneUnit, woice::PxToneWoices};
 pub struct PxToneService<'p> {
     service: BoxOrMut<'p, pxtnService>,
 }
@@ -22,21 +37,27 @@ impl<'p> PxToneService<'p> {
 
 impl<'p, T: Into<BoxOrMut<'p, pxtnService>>> From<T> for PxToneService<'p> {
     fn from(service: T) -> Self {
-        Self {
-            service: service.into(),
-        }
+        Self { service: service.into() }
     }
 }
 
 impl<'p> PxToneServiceIO for PxToneService<'p> {
     type Error = Error;
 
-    fn read_bytes(bytes: &[u8]) -> Result<Self, Self::Error> where Self: Sized {
+    fn read_bytes(bytes: &[u8]) -> Result<Self, Self::Error>
+    where
+        Self: Sized,
+    {
         let mut serv = unsafe { pxtnService::new() };
         Error::from_raw(unsafe { serv.init() })?;
 
         let mut descriptor = unsafe { pxtnDescriptor::new() };
-        if ! unsafe { descriptor.set_memory_r(bytes as *const _ as *mut std::ffi::c_void, bytes.len() as i32) } {
+        if !unsafe {
+            descriptor.set_memory_r(
+                bytes as *const _ as *mut std::ffi::c_void,
+                bytes.len() as i32,
+            )
+        } {
             return Err(Error::DescR);
         }
 
@@ -51,15 +72,20 @@ impl<'p> PxToneServiceIO for PxToneService<'p> {
 
         let path: PathBuf = path.canonicalize().map_err(|_| Error::DescW)?;
         let fpath = CString::new(path.to_string_lossy().as_bytes()).unwrap();
-        
-        let file = unsafe { fopen(fpath.as_ptr(), CStr::from_bytes_with_nul_unchecked(b"wb\0").as_ptr()) };
+
+        let file = unsafe {
+            fopen(
+                fpath.as_ptr(),
+                CStr::from_bytes_with_nul_unchecked(b"wb\0").as_ptr(),
+            )
+        };
 
         if file.is_null() {
             return Err(Error::DescW);
         }
 
         let mut descriptor = unsafe { pxtnDescriptor::new() };
-        if ! unsafe { descriptor.set_file_w(file) } {
+        if !unsafe { descriptor.set_file_w(file) } {
             return Err(Error::DescW);
         }
 
@@ -135,7 +161,7 @@ impl<'p> PxTone for PxToneService<'p> {
             let mut len = 0;
             let data = (*self.service.text).get_name_buf(&mut len) as *const u8;
             let arr = slice::from_raw_parts(data, len as usize);
-            
+
             // remove interior NULL bytes
             let mut bytes = Vec::new();
             for b in arr {
@@ -148,7 +174,10 @@ impl<'p> PxTone for PxToneService<'p> {
             // add our own NULL byte
             bytes.push('\0' as u8);
 
-            CString::from_vec_with_nul_unchecked(bytes).to_owned().to_string_lossy().into()
+            CString::from_vec_with_nul_unchecked(bytes)
+                .to_owned()
+                .to_string_lossy()
+                .into()
         }
     }
 
@@ -171,7 +200,7 @@ impl<'p> PxTone for PxToneService<'p> {
             let mut len = 0;
             let data = (*self.service.text).get_comment_buf(&mut len) as *const u8;
             let arr = slice::from_raw_parts(data, len as usize);
-            
+
             // remove interior NULL bytes
             let mut bytes = Vec::new();
             for b in arr {
@@ -184,7 +213,10 @@ impl<'p> PxTone for PxToneService<'p> {
             // add our own NULL byte
             bytes.push('\0' as u8);
 
-            CString::from_vec_with_nul_unchecked(bytes).to_owned().to_string_lossy().into()
+            CString::from_vec_with_nul_unchecked(bytes)
+                .to_owned()
+                .to_string_lossy()
+                .into()
         }
     }
 
@@ -199,13 +231,23 @@ impl<'p> PxTone for PxToneService<'p> {
     }
 
     fn units(&self) -> Units<Self::Unit> {
-        let raw = unsafe { slice::from_raw_parts(self.service._units, self.service._unit_num.try_into().unwrap()) };
+        let raw = unsafe {
+            slice::from_raw_parts(
+                self.service._units,
+                self.service._unit_num.try_into().unwrap(),
+            )
+        };
         let v = raw.iter().map(|r| PxToneUnit::new(*r)).collect::<Vec<_>>();
         Units::new(self, v)
     }
 
     fn units_mut(&mut self) -> UnitsMut<Self::Unit> {
-        let raw = unsafe { slice::from_raw_parts(self.service._units, self.service._unit_num.try_into().unwrap()) };
+        let raw = unsafe {
+            slice::from_raw_parts(
+                self.service._units,
+                self.service._unit_num.try_into().unwrap(),
+            )
+        };
         let v = raw.iter().map(|r| PxToneUnit::new(*r)).collect::<Vec<_>>();
         UnitsMut::new(self, v)
     }
@@ -219,33 +261,42 @@ impl<'p> PxTone for PxToneService<'p> {
     }
 
     fn woices(&self) -> Self::Woices {
-        let raw = unsafe { slice::from_raw_parts(self.service._woices, self.service._woice_num.try_into().unwrap()) };
+        let raw = unsafe {
+            slice::from_raw_parts(
+                self.service._woices,
+                self.service._woice_num.try_into().unwrap(),
+            )
+        };
         let v = raw.iter().map(|r| unsafe { &**r }).collect::<Vec<_>>();
         PxToneWoices::new(v)
     }
 
     fn woices_mut(&mut self) -> Self::WoicesMut {
-        let raw = unsafe { slice::from_raw_parts_mut(self.service._woices, self.service._woice_num.try_into().unwrap()) };
+        let raw = unsafe {
+            slice::from_raw_parts_mut(
+                self.service._woices,
+                self.service._woice_num.try_into().unwrap(),
+            )
+        };
         let v = raw.iter().map(|r| unsafe { &mut **r }).collect::<Vec<_>>();
         PxToneWoices::new(v)
     }
-
-    
 }
 
 impl<'p> Moo<Error> for PxToneService<'p> {
-
     fn set_audio_format(&mut self, channels: u8, sample_rate: u32) -> Result<(), Error> {
-        if unsafe { self.service.set_destination_quality(channels as i32, sample_rate as i32) } {
+        if unsafe {
+            self.service
+                .set_destination_quality(channels as i32, sample_rate as i32)
+        } {
             Error::from_raw(unsafe { self.service.tones_ready() })?;
             Ok(())
-        }else{
+        } else {
             Err(Error::VOID)
         }
     }
 
     fn prepare_sample(&mut self) -> Result<(), Error> {
-
         let prep = pxtnVOMITPREPARATION {
             start_pos_meas: 0,
             start_pos_sample: 0,
@@ -259,37 +310,44 @@ impl<'p> Moo<Error> for PxToneService<'p> {
 
         if unsafe { self.service.moo_preparation(&prep) } {
             Ok(())
-        }else {
+        } else {
             Err(Error::VOID)
         }
     }
 
     fn sample(&mut self, buffer: &mut [i16]) -> Result<(), Error> {
-        if unsafe { self.service.Moo(buffer.as_mut_ptr() as *mut _ as *mut std::ffi::c_void, buffer.len() as i32 * 2) } {
+        if unsafe {
+            self.service.Moo(
+                buffer.as_mut_ptr() as *mut _ as *mut std::ffi::c_void,
+                buffer.len() as i32 * 2,
+            )
+        } {
             Ok(())
-        }else {
+        } else {
             Err(Error::VOID)
         }
     }
 
     fn is_done_sampling(&self) -> bool {
-        unsafe {
-            self.service.moo_is_end_vomit()
-        }
+        unsafe { self.service.moo_is_end_vomit() }
     }
 
     fn now_clock(&self) -> u32 {
-        unsafe { self.service.moo_get_now_clock() }.try_into().unwrap_or(0)
+        unsafe { self.service.moo_get_now_clock() }
+            .try_into()
+            .unwrap_or(0)
     }
 
     fn end_clock(&self) -> u32 {
-        unsafe { self.service.moo_get_end_clock() }.try_into().unwrap_or(0)
+        unsafe { self.service.moo_get_end_clock() }
+            .try_into()
+            .unwrap_or(0)
     }
 
     fn set_unit_mute_enabled(&mut self, unit_mute: bool) -> Result<(), Error> {
         if unsafe { self.service.moo_set_mute_by_unit(unit_mute) } {
             Ok(())
-        }else {
+        } else {
             Err(Error::INIT)
         }
     }
@@ -297,44 +355,47 @@ impl<'p> Moo<Error> for PxToneService<'p> {
     fn set_loop(&mut self, should_loop: bool) -> Result<(), Error> {
         if unsafe { self.service.moo_set_loop(should_loop) } {
             Ok(())
-        }else {
+        } else {
             Err(Error::INIT)
         }
     }
 
     fn set_fade(&mut self, fade: Option<Fade>, duration: std::time::Duration) -> Result<(), Error> {
-        if unsafe { self.service.moo_set_fade(fade.map_or(0, |f| match f {
-            Fade::In => 1,
-            Fade::Out => -1,
-        }), duration.as_secs_f32()) } {
+        if unsafe {
+            self.service.moo_set_fade(
+                fade.map_or(0, |f| match f {
+                    Fade::In => 1,
+                    Fade::Out => -1,
+                }),
+                duration.as_secs_f32(),
+            )
+        } {
             Ok(())
-        }else {
+        } else {
             Err(Error::INIT)
         }
     }
 
     fn sampling_offset(&self) -> u32 {
-        unsafe {
-            self.service.moo_get_sampling_offset()
-        }.try_into().unwrap_or(0)
+        unsafe { self.service.moo_get_sampling_offset() }
+            .try_into()
+            .unwrap_or(0)
     }
 
     fn sampling_end(&self) -> u32 {
-        unsafe {
-            self.service.moo_get_sampling_end()
-        }.try_into().unwrap_or(0)
+        unsafe { self.service.moo_get_sampling_end() }
+            .try_into()
+            .unwrap_or(0)
     }
 
     fn total_samples(&self) -> u32 {
-        unsafe {
-            self.service.moo_get_total_sample() as u32
-        }
+        unsafe { self.service.moo_get_total_sample() as u32 }
     }
 
     fn set_master_volume(&mut self, volume: f32) -> Result<(), Error> {
         if unsafe { self.service.moo_set_master_volume(volume) } {
             Ok(())
-        }else {
+        } else {
             Err(Error::INIT)
         }
     }

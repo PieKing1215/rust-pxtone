@@ -1,10 +1,16 @@
-use std::{borrow::{Borrow}, marker::PhantomData, convert::Infallible};
+use std::{borrow::Borrow, convert::Infallible, marker::PhantomData};
 
-use crate::pxtone::util::{BoxOrRef, BoxOrMut};
+use crate::pxtone::util::{BoxOrMut, BoxOrRef};
 
 // TODO: this file has too many similarly named trait definitions in it, split into a couple files
 
-pub enum WoiceType<'a, PCM: Borrow<dyn WoicePCM<'a> + 'a>, PTV: Borrow<dyn WoicePTV + 'a>, PTN: Borrow<dyn WoicePTN<'a> + 'a>, OGGV: Borrow<dyn WoiceOGGV<'a> + 'a>> {
+pub enum WoiceType<
+    'a,
+    PCM: Borrow<dyn WoicePCM<'a> + 'a>,
+    PTV: Borrow<dyn WoicePTV + 'a>,
+    PTN: Borrow<dyn WoicePTN<'a> + 'a>,
+    OGGV: Borrow<dyn WoiceOGGV<'a> + 'a>,
+> {
     None,
     PCM(PCM),
     PTV(PTV),
@@ -21,25 +27,38 @@ pub trait Woice {
     fn name(&self) -> String;
     fn set_name(&mut self, name: String) -> Result<(), ()>;
 
-    fn woice_type(&self) -> WoiceType<BoxOrRef<dyn WoicePCM>, BoxOrRef<dyn WoicePTV>, BoxOrRef<dyn WoicePTN>, BoxOrRef<dyn WoiceOGGV>>;
-    fn woice_type_mut(&mut self) -> WoiceType<BoxOrMut<dyn WoicePCM>, BoxOrMut<dyn WoicePTV>, BoxOrMut<dyn WoicePTN>, BoxOrMut<dyn WoiceOGGV>>;
+    fn woice_type(
+        &self,
+    ) -> WoiceType<
+        BoxOrRef<dyn WoicePCM>,
+        BoxOrRef<dyn WoicePTV>,
+        BoxOrRef<dyn WoicePTN>,
+        BoxOrRef<dyn WoiceOGGV>,
+    >;
+    fn woice_type_mut(
+        &mut self,
+    ) -> WoiceType<
+        BoxOrMut<dyn WoicePCM>,
+        BoxOrMut<dyn WoicePTV>,
+        BoxOrMut<dyn WoicePTN>,
+        BoxOrMut<dyn WoiceOGGV>,
+    >;
     // fn set_woice_type(&mut self, w_type: WoiceType);
 }
 
 pub trait Voice {
     fn basic_key(&self) -> i32;
     fn set_basic_key(&mut self, basic_key: i32);
-    
+
     fn volume(&self) -> i32;
     fn set_volume(&mut self, volume: i32);
-    
+
     fn pan(&self) -> i32;
     fn set_pan(&mut self, pan: i32);
-    
+
     fn tuning(&self) -> f32;
     fn set_tuning(&mut self, tuning: f32);
 }
-
 
 pub trait VoicePCM: Voice {
     /// Should only be 1 or 2
@@ -87,28 +106,27 @@ pub trait VoicePTV: Voice {
     fn wave(&self) -> PTVWaveType;
 }
 
-
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[allow(dead_code)]
 pub enum PTNWaveType {
-	None,
-	Sine,
-	Saw,
-	Rect,
-	Random,
-	Saw2,
-	Rect2,
-	Tri,
-	Random2,
-	Rect3,
-	Rect4,
-	Rect8,
-	Rect16,
-	Saw3,
-	Saw4,
-	Saw6,
-	Saw8,
+    None,
+    Sine,
+    Saw,
+    Rect,
+    Random,
+    Saw2,
+    Rect2,
+    Tri,
+    Random2,
+    Rect3,
+    Rect4,
+    Rect8,
+    Rect16,
+    Saw3,
+    Saw4,
+    Saw6,
+    Saw8,
 }
 
 impl From<u8> for PTNWaveType {
@@ -137,42 +155,42 @@ impl From<u8> for PTNWaveType {
 
 pub trait PTNOscillator {
     /// Shape of the wave
-    /// 
+    ///
     /// See the guild in ptNoise
     fn shape(&self) -> PTNWaveType;
 
     /// Shape of the wave
-    /// 
+    ///
     /// See the guild in ptNoise
     fn set_shape(&mut self, shape: PTNWaveType);
 
     /// Frequency of the oscillator in Hz
-    /// 
+    ///
     /// Exactly as it appears in ptNoise
     fn frequency(&self) -> f32;
 
     /// Frequency of the oscillator in Hz
-    /// 
+    ///
     /// Exactly as it appears in ptNoise
     fn set_frequency(&mut self, frequency: f32);
-    
+
     /// Volume as %. Normally `0.0..=100.0`, but can go >`100.0`
-    /// 
+    ///
     /// Exactly as it appears in ptNoise
     fn volume(&self) -> f32;
 
     /// Volume as %. Normally `0.0..=100.0`, but can go >`100.0`
-    /// 
+    ///
     /// Exactly as it appears in ptNoise
     fn set_volume(&mut self, volume: f32);
 
     /// Phase offset as % of wave period. Normally `0.0..=100.0`, but can go >`100.0`
-    /// 
+    ///
     /// Exactly as it appears in ptNoise
     fn offset(&self) -> f32;
 
     /// Phase offset as % of wave period. Normally `0.0..=100.0`, but can go >`100.0`
-    /// 
+    ///
     /// Exactly as it appears in ptNoise
     fn set_offset(&mut self, offset: f32);
 
@@ -205,7 +223,7 @@ pub trait PTNUnit {
 
 pub trait VoicePTN: VoicePCM {
     /// Number of samples. Capped to 480000 in OG pxtone.
-    /// 
+    ///
     /// PTNs are always 44100kHz so you can do `sample_num() / 44100.0` to get the length in seconds
     fn ptn_sample_num(&self) -> u32;
 
@@ -217,7 +235,7 @@ pub trait VoiceOGGV: VoicePCM {
     fn ogg_channels(&self) -> u8;
 
     fn ogg_samples_per_second(&self) -> u32;
-    
+
     fn ogg_sample_num(&self) -> u32;
 
     fn ogg_data(&self) -> &[u8];

@@ -1,19 +1,28 @@
-
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-use pxtone::{og_impl::service::PxToneService, interface::{moo::Moo, io::PxToneServiceIO}};
+use pxtone::{
+    interface::{io::PxToneServiceIO, moo::Moo},
+    og_impl::service::PxToneService,
+};
 
 fn main() {
     // set up audio device
     let host = cpal::default_host();
-    let device = host.default_output_device().expect("failed to find output device");
-    println!("Output device: {}", device.name().unwrap_or("unknown".to_string()));
+    let device = host
+        .default_output_device()
+        .expect("failed to find output device");
+    println!(
+        "Output device: {}",
+        device.name().unwrap_or("unknown".to_string())
+    );
 
     let config = device.default_output_config().unwrap();
 
     // init pxtone
     let bytes = include_bytes!("sample.ptcop");
     let mut pxtone = PxToneService::read_bytes(bytes).expect("read_bytes failed");
-    pxtone.set_audio_format(config.channels() as u8, config.sample_rate().0).expect("set_audio_format failed");
+    pxtone
+        .set_audio_format(config.channels() as u8, config.sample_rate().0)
+        .expect("set_audio_format failed");
 
     // print some info
     // println!("serv.moo_get_end_clock() = {}", serv.moo_get_end_clock());
@@ -47,22 +56,27 @@ fn main() {
     let err_fn = |err| eprintln!("an error occurred on stream: {}", err);
 
     let sample_rate = config.sample_rate().0;
-    let stream = device.build_output_stream(
-        &config.into(),
-        move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
-            write_data(data, 2, &mut next_value)
-        },
-        err_fn,
-    ).expect("Failed to start audio stream");
+    let stream = device
+        .build_output_stream(
+            &config.into(),
+            move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
+                write_data(data, 2, &mut next_value)
+            },
+            err_fn,
+        )
+        .expect("Failed to start audio stream");
     stream.play().expect("Failed to play audio");
 
     println!("Sleeping for {:.2}s", sn as f64 / sample_rate as f64);
-    std::thread::sleep(std::time::Duration::from_secs_f64(sn as f64 / sample_rate as f64));
+    std::thread::sleep(std::time::Duration::from_secs_f64(
+        sn as f64 / sample_rate as f64,
+    ));
     println!("Done!");
 }
 
 fn write_data<T>(output: &mut [T], channels: usize, next_sample: &mut dyn FnMut() -> f32)
-where T: cpal::Sample,
+where
+    T: cpal::Sample,
 {
     let n = output.chunks_mut(channels);
     for frame in n {

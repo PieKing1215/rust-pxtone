@@ -1,6 +1,8 @@
-
-
-use super::{unit::{Unit, Units, UnitsMut}, event::{EventList, EventListMut}, woice::{Woices, WoicesMut}};
+use super::{
+    event::{EventList, EventListMut},
+    unit::{Unit, Units, UnitsMut},
+    woice::{Woices, WoicesMut},
+};
 
 /// Base trait for the overall state of pxtone
 pub trait PxTone {

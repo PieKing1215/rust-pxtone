@@ -1,14 +1,14 @@
 use std::borrow::{Borrow, BorrowMut};
 
-use pxtone_sys::{EVERECORD, pxtnEvelist};
+use pxtone_sys::{pxtnEvelist, EVERECORD};
 
-use crate::interface::event::{EventList, Event, EventListMut, EventKind};
+use crate::interface::event::{Event, EventKind, EventList, EventListMut};
 
 impl Event for EVERECORD {
     fn kind(&self) -> EventKind {
         self.kind.into()
     }
-    
+
     fn set_kind(&mut self, kind: EventKind) {
         self.kind = kind as u8;
     }
@@ -70,7 +70,6 @@ impl MaybeNext for *const EVERECORD {
     fn map(&self) -> &'static EVERECORD {
         unsafe { &**self }
     }
-    
 }
 
 impl MaybeNext for *mut EVERECORD {
@@ -117,9 +116,7 @@ impl<M, T: MaybeNext<Map = M>> IntoIterator for EventLinkedList<T> {
     type IntoIter = IterEventLinkedList<T>;
 
     fn into_iter(self) -> Self::IntoIter {
-        IterEventLinkedList {
-            current: self.raw,
-        }
+        IterEventLinkedList { current: self.raw }
     }
 }
 
@@ -127,11 +124,8 @@ impl<T: BorrowMut<pxtnEvelist>> EventListMut for PxToneEventList<T> {
     type IM = EventLinkedList<*mut EVERECORD>;
 
     fn iter_mut(&mut self) -> Self::IM {
-        EventLinkedList {
-            raw: self.evelist.borrow_mut()._start,
-        }
+        EventLinkedList { raw: self.evelist.borrow_mut()._start }
     }
-    
 }
 
 impl<T: Borrow<pxtnEvelist>> EventList for PxToneEventList<T> {
@@ -139,8 +133,6 @@ impl<T: Borrow<pxtnEvelist>> EventList for PxToneEventList<T> {
     type I = EventLinkedList<*const EVERECORD>;
 
     fn iter(&self) -> Self::I {
-        EventLinkedList {
-            raw: self.evelist.borrow()._start,
-        }
+        EventLinkedList { raw: self.evelist.borrow()._start }
     }
 }

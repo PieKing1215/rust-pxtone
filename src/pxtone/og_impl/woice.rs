@@ -1,12 +1,26 @@
+use std::{
+    borrow::{Borrow, BorrowMut},
+    ffi::CString,
+    marker::PhantomData,
+    slice,
+};
 
-use std::{marker::PhantomData, slice, ffi::CString, borrow::{Borrow, BorrowMut}};
+use pxtone_sys::{
+    pxNOISEDESIGN_OSCILLATOR, pxNOISEDESIGN_UNIT, pxtnPOINT, pxtnVOICEUNIT, pxtnVOICEWAVE,
+    pxtnWoice,
+};
 
-use pxtone_sys::{pxtnWoice, pxtnVOICEUNIT, pxtnVOICEWAVE, pxtnPOINT, pxNOISEDESIGN_UNIT, pxNOISEDESIGN_OSCILLATOR};
-
-use crate::{interface::woice::{Woices, Woice, WoicesMut, WoicePCM, WoicePTV, WoicePTN, WoiceOGGV, WoiceType, Voice, SingleVoice, VoicePCM, VoicePTN, VoiceOGGV, VoicePTV, PTVCoordinateWave, PTVWaveType, PTVCoordinateWavePoint, PTVOvertoneWaveTone, PTVOvertoneWave, PTNUnit, PTNEnvelopePoint, PTNOscillator, PTNWaveType}, pxtone::util::{BoxOrRef, BoxOrMut}};
+use crate::{
+    interface::woice::{
+        PTNEnvelopePoint, PTNOscillator, PTNUnit, PTNWaveType, PTVCoordinateWave,
+        PTVCoordinateWavePoint, PTVOvertoneWave, PTVOvertoneWaveTone, PTVWaveType, SingleVoice,
+        Voice, VoiceOGGV, VoicePCM, VoicePTN, VoicePTV, Woice, WoiceOGGV, WoicePCM, WoicePTN,
+        WoicePTV, WoiceType, Woices, WoicesMut,
+    },
+    pxtone::util::{BoxOrMut, BoxOrRef},
+};
 
 impl Woice for pxtnWoice {
-
     fn name(&self) -> String {
         unsafe {
             if !self.is_name_buf() {
@@ -16,7 +30,7 @@ impl Woice for pxtnWoice {
             let mut len = 0;
             let data = self.get_name_buf(&mut len) as *const u8;
             let arr = slice::from_raw_parts(data, len as usize);
-            
+
             // remove interior NULL bytes
             let mut bytes = Vec::new();
             for b in arr {
@@ -29,7 +43,10 @@ impl Woice for pxtnWoice {
             // add our own NULL byte
             bytes.push('\0' as u8);
 
-            CString::from_vec_with_nul_unchecked(bytes).to_owned().to_string_lossy().into()
+            CString::from_vec_with_nul_unchecked(bytes)
+                .to_owned()
+                .to_string_lossy()
+                .into()
         }
     }
 
@@ -43,7 +60,14 @@ impl Woice for pxtnWoice {
         }
     }
 
-    fn woice_type(&self) -> WoiceType<BoxOrRef<dyn WoicePCM>, BoxOrRef<dyn WoicePTV>, BoxOrRef<dyn WoicePTN>, BoxOrRef<dyn WoiceOGGV>> {
+    fn woice_type(
+        &self,
+    ) -> WoiceType<
+        BoxOrRef<dyn WoicePCM>,
+        BoxOrRef<dyn WoicePTV>,
+        BoxOrRef<dyn WoicePTN>,
+        BoxOrRef<dyn WoiceOGGV>,
+    > {
         match self._type {
             pxtone_sys::pxtnWOICETYPE_pxtnWOICE_PCM => WoiceType::PCM(BoxOrRef::Ref(self)),
             pxtone_sys::pxtnWOICETYPE_pxtnWOICE_PTV => WoiceType::PTV(BoxOrRef::Ref(self)),
@@ -53,7 +77,14 @@ impl Woice for pxtnWoice {
         }
     }
 
-    fn woice_type_mut(&mut self) -> WoiceType<BoxOrMut<dyn WoicePCM>, BoxOrMut<dyn WoicePTV>, BoxOrMut<dyn WoicePTN>, BoxOrMut<dyn WoiceOGGV>> {
+    fn woice_type_mut(
+        &mut self,
+    ) -> WoiceType<
+        BoxOrMut<dyn WoicePCM>,
+        BoxOrMut<dyn WoicePTV>,
+        BoxOrMut<dyn WoicePTN>,
+        BoxOrMut<dyn WoiceOGGV>,
+    > {
         match self._type {
             pxtone_sys::pxtnWOICETYPE_pxtnWOICE_PCM => WoiceType::PCM(BoxOrMut::Ref(self)),
             pxtone_sys::pxtnWOICETYPE_pxtnWOICE_PTV => WoiceType::PTV(BoxOrMut::Ref(self)),
@@ -121,7 +152,7 @@ impl VoicePCM for pxtnVOICEUNIT {
 
     fn sample_buffer(&self) -> &[u8] {
         let pcm = unsafe { &*self.p_pcm };
-        let size = (pcm._smp_head + pcm._smp_body + pcm._smp_tail ) * pcm._ch * pcm._bps / 8;
+        let size = (pcm._smp_head + pcm._smp_body + pcm._smp_tail) * pcm._ch * pcm._bps / 8;
         unsafe { slice::from_raw_parts(pcm._p_smp, size as usize) }
     }
 }
@@ -143,7 +174,7 @@ impl PTVCoordinateWave for pxtnVOICEWAVE {
 
     fn points(&self) -> Vec<&dyn PTVCoordinateWavePoint> {
         let slice = unsafe { slice::from_raw_parts(self.points, self.num as usize) };
-        
+
         let mut v = Vec::new();
         for p in slice {
             v.push(p as &dyn PTVCoordinateWavePoint);
@@ -166,7 +197,7 @@ impl PTVOvertoneWaveTone for pxtnPOINT {
 impl PTVOvertoneWave for pxtnVOICEWAVE {
     fn tones(&self) -> Vec<&dyn PTVOvertoneWaveTone> {
         let slice = unsafe { slice::from_raw_parts(self.points, self.num as usize) };
-        
+
         let mut v = Vec::new();
         for p in slice {
             v.push(p as &dyn PTVOvertoneWaveTone);
@@ -236,7 +267,6 @@ impl PTNOscillator for pxNOISEDESIGN_OSCILLATOR {
     fn set_reverse(&mut self, reverse: bool) {
         self.b_rev = reverse;
     }
-    
 }
 
 impl PTNUnit for pxNOISEDESIGN_UNIT {
@@ -246,7 +276,7 @@ impl PTNUnit for pxNOISEDESIGN_UNIT {
 
     fn envelope(&self) -> Vec<&dyn PTNEnvelopePoint> {
         let slice = unsafe { slice::from_raw_parts(self.enves, self.enve_num as usize) };
-        
+
         let mut v = Vec::new();
         for p in slice {
             v.push(p as &dyn PTNEnvelopePoint);
@@ -270,7 +300,6 @@ impl PTNUnit for pxNOISEDESIGN_UNIT {
     fn osc_volume(&self) -> &dyn PTNOscillator {
         &self.volu
     }
-    
 }
 
 impl VoicePTN for pxtnVOICEUNIT {
@@ -281,7 +310,7 @@ impl VoicePTN for pxtnVOICEUNIT {
     fn units(&self) -> Vec<&dyn PTNUnit> {
         let ptn = unsafe { &*self.p_ptn };
         let slice = unsafe { slice::from_raw_parts(ptn._units, ptn._unit_num as usize) };
-        
+
         let mut v = Vec::new();
         for p in slice {
             v.push(p as &dyn PTNUnit);
@@ -309,7 +338,6 @@ impl VoiceOGGV for pxtnVOICEUNIT {
         unsafe { (*self.p_oggv)._smp_num as u32 }
     }
 }
-
 
 impl<'a> SingleVoice<'a, dyn VoicePCM> for pxtnWoice {
     fn voice<'b>(&'b self) -> &'b (dyn VoicePCM + 'a) {
@@ -347,9 +375,7 @@ impl<'a> SingleVoice<'a, dyn VoiceOGGV> for pxtnWoice {
     }
 }
 
-impl WoicePCM<'_> for pxtnWoice {
-
-}
+impl WoicePCM<'_> for pxtnWoice {}
 
 impl WoicePTV for pxtnWoice {
     fn voices(&self) -> Vec<&dyn VoicePTV> {
@@ -362,14 +388,9 @@ impl WoicePTV for pxtnWoice {
     }
 }
 
-impl WoicePTN<'_> for pxtnWoice {
-    
-}
+impl WoicePTN<'_> for pxtnWoice {}
 
-impl WoiceOGGV<'_> for pxtnWoice {
-    
-}
-
+impl WoiceOGGV<'_> for pxtnWoice {}
 
 pub struct PxToneWoices<'p, T: Borrow<pxtnWoice>> {
     _phantom: PhantomData<&'p ()>,
@@ -378,10 +399,7 @@ pub struct PxToneWoices<'p, T: Borrow<pxtnWoice>> {
 
 impl<'p, T: Borrow<pxtnWoice>> PxToneWoices<'p, T> {
     pub fn new(woices: Vec<T>) -> Self {
-        Self {
-            _phantom: PhantomData,
-            woices,
-        }
+        Self { _phantom: PhantomData, woices }
     }
 }
 

@@ -1,4 +1,3 @@
-
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[allow(dead_code)]

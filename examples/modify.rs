@@ -1,6 +1,15 @@
-use std::{path::Path};
+use std::path::Path;
 
-use pxtone::{interface::{event::{Event, EventKind, EventListMut}, unit::Unit, woice::{Woice, WoicesMut, WoiceType, PTVWaveType, PTNOscillator}, io::PxToneServiceIO, service::PxTone}, og_impl::{service::PxToneService}};
+use pxtone::{
+    interface::{
+        event::{Event, EventKind, EventListMut},
+        io::PxToneServiceIO,
+        service::PxTone,
+        unit::Unit,
+        woice::{PTNOscillator, PTVWaveType, Woice, WoiceType, WoicesMut},
+    },
+    og_impl::service::PxToneService,
+};
 
 fn main() {
     // load ptcop file
@@ -13,18 +22,21 @@ fn main() {
 }
 
 fn do_stuff<PXTN: PxTone + PxToneServiceIO>(pxtone: &mut PXTN) -> Result<(), PXTN::Error> {
-    
     println!("Editing \"{}\"", pxtone.name());
 
     // change project name/comment
     pxtone.set_name(format!("{}!", pxtone.name())).unwrap();
-    pxtone.set_comment("this is\r\nthe new comment".into()).unwrap();
+    pxtone
+        .set_comment("this is\r\nthe new comment".into())
+        .unwrap();
 
     // change project tempo
     pxtone.set_beat_tempo(pxtone.beat_tempo() as f32 * 0.75);
 
     // rename the first unit
-    pxtone.units_mut()[0].set_name("supreme unit".into()).unwrap();
+    pxtone.units_mut()[0]
+        .set_name("supreme unit".into())
+        .unwrap();
 
     // iterate through woices and print out a bunch of details
     for (i, mut woice) in pxtone.woices_mut().iter_mut().enumerate() {
@@ -37,14 +49,23 @@ fn do_stuff<PXTN: PxTone + PxToneServiceIO>(pxtone: &mut PXTN) -> Result<(), PXT
         match woice.woice_type() {
             WoiceType::PCM(pcm) => {
                 let v = pcm.voice();
-                println!("-PCM chs={} sps={} bps={}", v.channels(), v.samples_per_second(), v.bits_per_sample());
+                println!(
+                    "-PCM chs={} sps={} bps={}",
+                    v.channels(),
+                    v.samples_per_second(),
+                    v.bits_per_sample()
+                );
             },
             WoiceType::PTV(ptv) => {
                 println!("-PTV with {} voice(s):", ptv.voices().len());
                 for (i, v) in ptv.voices().iter().enumerate() {
                     match v.wave() {
                         PTVWaveType::Coordinate(wave) => {
-                            println!("--#{i} (coordinate) reso={} num_points={}", wave.resolution(), wave.points().len());
+                            println!(
+                                "--#{i} (coordinate) reso={} num_points={}",
+                                wave.resolution(),
+                                wave.points().len()
+                            );
                         },
                         PTVWaveType::Overtone(wave) => {
                             println!("--#{i} (overtone) num_tones={}", wave.tones().len());
@@ -54,14 +75,30 @@ fn do_stuff<PXTN: PxTone + PxToneServiceIO>(pxtone: &mut PXTN) -> Result<(), PXT
             },
             WoiceType::PTN(ptn) => {
                 let v = ptn.voice();
-                println!("-PTN smp_num={} secs={} with {} unit(s)", v.ptn_sample_num(), v.ptn_sample_num() as f32 / 44100.0, v.units().len());
+                println!(
+                    "-PTN smp_num={} secs={} with {} unit(s)",
+                    v.ptn_sample_num(),
+                    v.ptn_sample_num() as f32 / 44100.0,
+                    v.units().len()
+                );
                 for (i, u) in v.units().iter().enumerate() {
-
                     fn osc_to_string(osc: &dyn PTNOscillator) -> String {
-                        format!("shape={:?} freq={:.1} vol={:.1} ofs={:.1} rev={}", osc.shape(), osc.frequency(), osc.volume(), osc.offset(), osc.reverse())
+                        format!(
+                            "shape={:?} freq={:.1} vol={:.1} ofs={:.1} rev={}",
+                            osc.shape(),
+                            osc.frequency(),
+                            osc.volume(),
+                            osc.offset(),
+                            osc.reverse()
+                        )
                     }
 
-                    println!("--#{i} enabled={} num_envelope_points={} pan={}", u.enabled(), u.envelope().len(), u.pan());
+                    println!(
+                        "--#{i} enabled={} num_envelope_points={} pan={}",
+                        u.enabled(),
+                        u.envelope().len(),
+                        u.pan()
+                    );
                     println!("---main={{{}}}", osc_to_string(u.osc_main()));
                     println!("---freq={{{}}}", osc_to_string(u.osc_frequency()));
                     println!("---volu={{{}}}", osc_to_string(u.osc_volume()));
@@ -69,7 +106,12 @@ fn do_stuff<PXTN: PxTone + PxToneServiceIO>(pxtone: &mut PXTN) -> Result<(), PXT
             },
             WoiceType::OGGV(ogg) => {
                 let v = ogg.voice();
-                println!("-OGGV ogg_chs={} ogg_sps={} ogg_smp_num={}", v.ogg_channels(), v.ogg_samples_per_second(), v.ogg_sample_num());
+                println!(
+                    "-OGGV ogg_chs={} ogg_sps={} ogg_smp_num={}",
+                    v.ogg_channels(),
+                    v.ogg_samples_per_second(),
+                    v.ogg_sample_num()
+                );
             },
             _ => {},
         }
@@ -85,7 +127,7 @@ fn do_stuff<PXTN: PxTone + PxToneServiceIO>(pxtone: &mut PXTN) -> Result<(), PXT
         match event.kind() {
             EventKind::PanVolume => {
                 event.set_value(128 - event.value());
-            }
+            },
             _ => {},
         }
     }

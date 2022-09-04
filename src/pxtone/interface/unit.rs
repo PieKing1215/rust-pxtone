@@ -1,12 +1,18 @@
-use std::{ops::{Deref, DerefMut}, marker::PhantomData};
+use std::{
+    marker::PhantomData,
+    ops::{Deref, DerefMut},
+};
 
-use super::{event::{EventList, EventListMut}, service::PxTone, woice::{WoicesMut, Woices}};
-
+use super::{
+    event::{EventList, EventListMut},
+    service::PxTone,
+    woice::{Woices, WoicesMut},
+};
 
 pub trait Unit {
     fn selected(&self) -> bool;
     fn set_selected(&mut self, selected: bool);
-    
+
     fn muted(&self) -> bool;
     fn set_muted(&mut self, muted: bool);
 
@@ -20,11 +26,17 @@ pub struct Units<'a, U: Unit> {
 }
 
 impl<'a, U: Unit> Units<'a, U> {
-    pub fn new<EL: EventList, ELM: EventListMut, W: Woices, WM: WoicesMut>(_pxtn: &'a dyn PxTone<Unit = U, EventList = EL, EventListMut = ELM, Woices = W, WoicesMut = WM>, v: Vec<U>) -> Self {
-        Self {
-            _phantom: PhantomData,
-            v,
-        }
+    pub fn new<EL: EventList, ELM: EventListMut, W: Woices, WM: WoicesMut>(
+        _pxtn: &'a dyn PxTone<
+            Unit = U,
+            EventList = EL,
+            EventListMut = ELM,
+            Woices = W,
+            WoicesMut = WM,
+        >,
+        v: Vec<U>,
+    ) -> Self {
+        Self { _phantom: PhantomData, v }
     }
 }
 
@@ -42,11 +54,17 @@ pub struct UnitsMut<'a, U: Unit> {
 }
 
 impl<'a, U: Unit> UnitsMut<'a, U> {
-    pub fn new<EL: EventList, ELM: EventListMut, W: Woices, WM: WoicesMut>(_pxtn: &'a mut dyn PxTone<Unit = U, EventList = EL, EventListMut = ELM, Woices = W, WoicesMut = WM>, v: Vec<U>) -> Self {
-        Self {
-            _phantom: PhantomData,
-            v,
-        }
+    pub fn new<EL: EventList, ELM: EventListMut, W: Woices, WM: WoicesMut>(
+        _pxtn: &'a mut dyn PxTone<
+            Unit = U,
+            EventList = EL,
+            EventListMut = ELM,
+            Woices = W,
+            WoicesMut = WM,
+        >,
+        v: Vec<U>,
+    ) -> Self {
+        Self { _phantom: PhantomData, v }
     }
 }
 
