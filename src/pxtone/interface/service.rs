@@ -1,11 +1,13 @@
 
 
-use super::{unit::{Unit, Units, UnitsMut}, event::{EventList, EventListMut}};
+use super::{unit::{Unit, Units, UnitsMut}, event::{EventList, EventListMut}, woice::{Woices, WoicesMut}};
 
 pub trait PxTone {
     type Unit: Unit + Sized;
     type EventList: EventList + Sized;
     type EventListMut: EventListMut + Sized;
+    type Woices: Woices + Sized;
+    type WoicesMut: WoicesMut + Sized;
 
     fn beat_num(&self) -> i32;
     fn set_beat_num(&mut self, beat_num: i32);
@@ -36,4 +38,7 @@ pub trait PxTone {
 
     fn event_list(&self) -> Self::EventList;
     fn event_list_mut(&mut self) -> Self::EventListMut;
+
+    fn woices(&self) -> Self::Woices;
+    fn woices_mut(&mut self) -> Self::WoicesMut;
 }

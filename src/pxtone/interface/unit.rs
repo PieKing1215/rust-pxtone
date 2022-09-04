@@ -1,6 +1,6 @@
 use std::{ops::{Deref, DerefMut}, marker::PhantomData};
 
-use super::{event::{EventList, EventListMut}, service::PxTone};
+use super::{event::{EventList, EventListMut}, service::PxTone, woice::{WoicesMut, Woices}};
 
 
 pub trait Unit {
@@ -20,7 +20,7 @@ pub struct Units<'a, U: Unit> {
 }
 
 impl<'a, U: Unit> Units<'a, U> {
-    pub fn new<EL: EventList, ELM: EventListMut>(_pxtn: &'a dyn PxTone<Unit = U, EventList = EL, EventListMut = ELM>, v: Vec<U>) -> Self {
+    pub fn new<EL: EventList, ELM: EventListMut, W: Woices, WM: WoicesMut>(_pxtn: &'a dyn PxTone<Unit = U, EventList = EL, EventListMut = ELM, Woices = W, WoicesMut = WM>, v: Vec<U>) -> Self {
         Self {
             _phantom: PhantomData,
             v,
@@ -42,7 +42,7 @@ pub struct UnitsMut<'a, U: Unit> {
 }
 
 impl<'a, U: Unit> UnitsMut<'a, U> {
-    pub fn new<EL: EventList, ELM: EventListMut>(_pxtn: &'a mut dyn PxTone<Unit = U, EventList = EL, EventListMut = ELM>, v: Vec<U>) -> Self {
+    pub fn new<EL: EventList, ELM: EventListMut, W: Woices, WM: WoicesMut>(_pxtn: &'a mut dyn PxTone<Unit = U, EventList = EL, EventListMut = ELM, Woices = W, WoicesMut = WM>, v: Vec<U>) -> Self {
         Self {
             _phantom: PhantomData,
             v,
