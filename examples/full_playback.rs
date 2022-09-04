@@ -10,9 +10,10 @@ fn main() {
     let device = host
         .default_output_device()
         .expect("failed to find output device");
+
     println!(
         "Output device: {}",
-        device.name().unwrap_or("unknown".to_string())
+        device.name().unwrap_or_else(|_| "unknown".to_string())
     );
 
     let config = device.default_output_config().unwrap();

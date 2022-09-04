@@ -39,7 +39,7 @@ pub enum Error {
 
 impl Error {
     pub fn from_raw(value: pxtnERR) -> Result<(), Error> {
-        Self::from_i32(value as i32).map_or(Ok(()), |e| Err(e))
+        Self::from_i32(value as i32).map_or(Ok(()), Err)
     }
 }
 

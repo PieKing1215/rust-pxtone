@@ -165,17 +165,16 @@ impl<'p> PxTone for PxToneService<'p> {
             // remove interior NULL bytes
             let mut bytes = Vec::new();
             for b in arr {
-                if *b == '\0' as u8 {
+                if *b == b'\0' {
                     break;
                 }
                 bytes.push(*b);
             }
 
             // add our own NULL byte
-            bytes.push('\0' as u8);
+            bytes.push(b'\0');
 
             CString::from_vec_with_nul_unchecked(bytes)
-                .to_owned()
                 .to_string_lossy()
                 .into()
         }
@@ -204,17 +203,16 @@ impl<'p> PxTone for PxToneService<'p> {
             // remove interior NULL bytes
             let mut bytes = Vec::new();
             for b in arr {
-                if *b == '\0' as u8 {
+                if *b == b'\0' {
                     break;
                 }
                 bytes.push(*b);
             }
 
             // add our own NULL byte
-            bytes.push('\0' as u8);
+            bytes.push(b'\0');
 
             CString::from_vec_with_nul_unchecked(bytes)
-                .to_owned()
                 .to_string_lossy()
                 .into()
         }
@@ -237,7 +235,10 @@ impl<'p> PxTone for PxToneService<'p> {
                 self.service._unit_num.try_into().unwrap(),
             )
         };
-        let v = raw.iter().map(|r| PxToneUnit::new(*r)).collect::<Vec<_>>();
+        let v = raw
+            .iter()
+            .map(|r| PxToneUnit::new(unsafe { &mut **r }))
+            .collect::<Vec<_>>();
         Units::new(self, v)
     }
 
@@ -248,7 +249,10 @@ impl<'p> PxTone for PxToneService<'p> {
                 self.service._unit_num.try_into().unwrap(),
             )
         };
-        let v = raw.iter().map(|r| PxToneUnit::new(*r)).collect::<Vec<_>>();
+        let v = raw
+            .iter()
+            .map(|r| PxToneUnit::new(unsafe { &mut **r }))
+            .collect::<Vec<_>>();
         UnitsMut::new(self, v)
     }
 

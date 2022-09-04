@@ -23,26 +23,28 @@ pub enum WoiceType<
     _Phantom(Infallible, PhantomData<&'a ()>),
 }
 
+pub type WoiceTypeRef<'a> = WoiceType<
+    'a,
+    BoxOrRef<'a, dyn WoicePCM<'a>>,
+    BoxOrRef<'a, dyn WoicePTV>,
+    BoxOrRef<'a, dyn WoicePTN<'a>>,
+    BoxOrRef<'a, dyn WoiceOGGV<'a>>,
+>;
+
+pub type WoiceTypeMut<'a> = WoiceType<
+    'a,
+    BoxOrMut<'a, dyn WoicePCM<'a>>,
+    BoxOrMut<'a, dyn WoicePTV>,
+    BoxOrMut<'a, dyn WoicePTN<'a>>,
+    BoxOrMut<'a, dyn WoiceOGGV<'a>>,
+>;
+
 pub trait Woice {
     fn name(&self) -> String;
     fn set_name(&mut self, name: String) -> Result<(), ()>;
 
-    fn woice_type(
-        &self,
-    ) -> WoiceType<
-        BoxOrRef<dyn WoicePCM>,
-        BoxOrRef<dyn WoicePTV>,
-        BoxOrRef<dyn WoicePTN>,
-        BoxOrRef<dyn WoiceOGGV>,
-    >;
-    fn woice_type_mut(
-        &mut self,
-    ) -> WoiceType<
-        BoxOrMut<dyn WoicePCM>,
-        BoxOrMut<dyn WoicePTV>,
-        BoxOrMut<dyn WoicePTN>,
-        BoxOrMut<dyn WoiceOGGV>,
-    >;
+    fn woice_type(&self) -> WoiceTypeRef;
+    fn woice_type_mut(&mut self) -> WoiceTypeMut;
     // fn set_woice_type(&mut self, w_type: WoiceType);
 }
 
@@ -242,8 +244,8 @@ pub trait VoiceOGGV: VoicePCM {
 }
 
 pub trait SingleVoice<'a, V: Voice + 'a + ?Sized> {
-    fn voice<'b>(&'b self) -> &'b V;
-    fn voice_mut<'b>(&'b mut self) -> &'b mut V;
+    fn voice(&self) -> &V;
+    fn voice_mut(&mut self) -> &mut V;
 }
 
 pub trait WoicePCM<'a>: SingleVoice<'a, dyn VoicePCM> {}

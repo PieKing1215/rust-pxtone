@@ -9,8 +9,8 @@ pub struct PxToneUnit {
 }
 
 impl PxToneUnit {
-    pub fn new(raw: *mut pxtnUnit) -> Self {
-        Self { raw: unsafe { &mut *raw } }
+    pub fn new(raw: &'static mut pxtnUnit) -> Self {
+        Self { raw }
     }
 }
 
@@ -48,17 +48,16 @@ impl Unit for PxToneUnit {
             // remove interior NULL bytes
             let mut bytes = Vec::new();
             for b in arr {
-                if *b == '\0' as u8 {
+                if *b == b'\0' {
                     break;
                 }
                 bytes.push(*b);
             }
 
             // add our own NULL byte
-            bytes.push('\0' as u8);
+            bytes.push(b'\0');
 
             CString::from_vec_with_nul_unchecked(bytes)
-                .to_owned()
                 .to_string_lossy()
                 .into()
         }

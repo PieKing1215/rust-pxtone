@@ -34,17 +34,16 @@ impl Woice for pxtnWoice {
             // remove interior NULL bytes
             let mut bytes = Vec::new();
             for b in arr {
-                if *b == '\0' as u8 {
+                if *b == b'\0' {
                     break;
                 }
                 bytes.push(*b);
             }
 
             // add our own NULL byte
-            bytes.push('\0' as u8);
+            bytes.push(b'\0');
 
             CString::from_vec_with_nul_unchecked(bytes)
-                .to_owned()
                 .to_string_lossy()
                 .into()
         }
@@ -407,7 +406,7 @@ impl<'p, T: Borrow<pxtnWoice>> Woices for PxToneWoices<'p, T> {
     type W = pxtnWoice;
 
     fn iter<'a>(&'a self) -> Box<dyn Iterator<Item = BoxOrRef<Self::W>> + 'a> {
-        let v = (&self.woices).into_iter().map(|a| {
+        let v = (&self.woices).iter().map(|a| {
             let b: &'a pxtnWoice = a.borrow();
             BoxOrRef::Ref(b)
         });
@@ -417,7 +416,7 @@ impl<'p, T: Borrow<pxtnWoice>> Woices for PxToneWoices<'p, T> {
 
 impl<'p, T: BorrowMut<pxtnWoice>> WoicesMut for PxToneWoices<'p, T> {
     fn iter_mut<'a>(&'a mut self) -> Box<dyn Iterator<Item = BoxOrMut<Self::W>> + 'a> {
-        let v = (&mut self.woices).into_iter().map(|a| {
+        let v = (&mut self.woices).iter_mut().map(|a| {
             let b: &'a mut pxtnWoice = a.borrow_mut();
             BoxOrMut::Ref(b)
         });

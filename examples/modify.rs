@@ -115,7 +115,7 @@ fn do_stuff<PXTN: PxTone + PxToneServiceIO>(pxtone: &mut PXTN) -> Result<(), PXT
             },
             _ => {},
         }
-        println!("");
+        println!();
     }
 
     // edit some events
@@ -124,6 +124,7 @@ fn do_stuff<PXTN: PxTone + PxToneServiceIO>(pxtone: &mut PXTN) -> Result<(), PXT
         event.set_clock(event.clock() + ((event.clock() as f32 / 400.0).sin() * 100.0) as i32);
 
         // flip volume pan
+        #[allow(clippy::single_match)]
         match event.kind() {
             EventKind::PanVolume => {
                 event.set_value(128 - event.value());
