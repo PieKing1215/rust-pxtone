@@ -8,6 +8,10 @@ impl Event for EVERECORD {
     fn kind(&self) -> EventKind {
         self.kind.into()
     }
+    
+    fn set_kind(&mut self, kind: EventKind) {
+        self.kind = kind as u8;
+    }
 
     fn unit_no(&self) -> u8 {
         self.unit_no

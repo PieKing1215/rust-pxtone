@@ -46,6 +46,7 @@ impl From<u8> for EventKind {
 
 pub trait Event {
     fn kind(&self) -> EventKind;
+    fn set_kind(&mut self, kind: EventKind);
 
     fn unit_no(&self) -> u8;
     fn set_unit_no(&mut self, u: u8);
