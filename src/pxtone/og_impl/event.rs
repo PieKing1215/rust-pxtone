@@ -121,18 +121,21 @@ impl<M, T: MaybeNext<Map = M>> IntoIterator for EventLinkedList<T> {
 }
 
 impl<T: BorrowMut<pxtnEvelist>> EventListMut for PxToneEventList<T> {
-    type IM = EventLinkedList<*mut EVERECORD>;
+    type IM = <EventLinkedList<*mut EVERECORD> as IntoIterator>::IntoIter;
 
     fn iter_mut(&mut self) -> Self::IM {
-        EventLinkedList { raw: self.evelist.borrow_mut()._start }
+        EventLinkedList { raw: self.evelist.borrow_mut()._start }.into_iter()
     }
 }
 
 impl<T: Borrow<pxtnEvelist>> EventList for PxToneEventList<T> {
     type E = EVERECORD;
-    type I = EventLinkedList<*const EVERECORD>;
+    type I = <EventLinkedList<*const EVERECORD> as IntoIterator>::IntoIter;
 
     fn iter(&self) -> Self::I {
-        EventLinkedList { raw: self.evelist.borrow()._start }
+        EventLinkedList {
+            raw: self.evelist.borrow()._start as *const EVERECORD,
+        }
+        .into_iter()
     }
 }
