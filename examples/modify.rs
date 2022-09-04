@@ -32,7 +32,7 @@ fn do_stuff<PXTN: PxTone + PxToneServiceIO>(pxtone: &mut PXTN) -> Result<(), PXT
     }
 
     // edit some events
-    for event in pxtone.event_list_mut().events_mut() {
+    for event in pxtone.event_list_mut().iter_mut() {
         // time warp all events
         event.set_clock(event.clock() + ((event.clock() as f32 / 400.0).sin() * 100.0) as i32);
 

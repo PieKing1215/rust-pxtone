@@ -1,11 +1,11 @@
 
 use std::{convert::TryInto, slice, path::PathBuf, ffi::{CStr, CString}, fs::File};
 
-use pxtone_sys::{pxtnDescriptor, pxtnService, pxtnVOMITPREPARATION, fopen, fclose, pxtnWoice};
+use pxtone_sys::{pxtnDescriptor, pxtnService, pxtnVOMITPREPARATION, fopen, fclose, pxtnWoice, pxtnEvelist};
 
 use crate::{interface::{moo::{Moo, Fade}, service::PxTone, unit::{Units, UnitsMut}, io::PxToneServiceIO}, pxtone::util::BoxOrMut};
 
-use super::{error::Error, unit::PxToneUnit, event::{PxToneEventList, PxToneEventListMut}, woice::{PxToneWoices}};
+use super::{error::Error, unit::PxToneUnit, event::{PxToneEventList}, woice::{PxToneWoices}};
 pub struct PxToneService<'p> {
     service: BoxOrMut<'p, pxtnService>,
 }
@@ -69,8 +69,8 @@ impl<'p> PxToneServiceIO for PxToneService<'p> {
 
 impl<'p> PxTone for PxToneService<'p> {
     type Unit = PxToneUnit;
-    type EventList = PxToneEventList;
-    type EventListMut = PxToneEventListMut;
+    type EventList = PxToneEventList<&'p pxtnEvelist>;
+    type EventListMut = PxToneEventList<&'p mut pxtnEvelist>;
     type Woices = PxToneWoices<'p, &'p pxtnWoice>;
     type WoicesMut = PxToneWoices<'p, &'p mut pxtnWoice>;
 
@@ -207,11 +207,11 @@ impl<'p> PxTone for PxToneService<'p> {
     }
 
     fn event_list(&self) -> Self::EventList {
-        PxToneEventList::new(self.service.evels)
+        PxToneEventList::new(unsafe { &*self.service.evels })
     }
 
     fn event_list_mut(&mut self) -> Self::EventListMut {
-        PxToneEventListMut::new(self.service.evels)
+        PxToneEventList::new(unsafe { &mut *self.service.evels })
     }
 
     fn woices(&self) -> Self::Woices {

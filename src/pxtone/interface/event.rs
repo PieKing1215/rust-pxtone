@@ -61,14 +61,11 @@ pub trait EventList {
     type E: Event + 'static;
     type I: IntoIterator<Item = &'static Self::E>;
 
-    fn events(&self) -> Self::I;
+    fn iter(&self) -> Self::I;
 }
 
-pub trait EventListMut {
-    type E: Event + 'static;
-    type I: IntoIterator<Item = &'static Self::E>;
+pub trait EventListMut: EventList {
     type IM: IntoIterator<Item = &'static mut Self::E>;
 
-    fn events(&self) -> Self::I;
-    fn events_mut(&mut self) -> Self::IM;
+    fn iter_mut(&mut self) -> Self::IM;
 }
