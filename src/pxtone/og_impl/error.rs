@@ -46,14 +46,11 @@ impl Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         unsafe {
-            let msg = self
-                .to_i32()
-                .map(|err| {
-                    CStr::from_ptr(pxtnError_get_string(err as pxtnERR))
-                        .to_str()
-                        .unwrap()
-                })
-                .unwrap_or("???");
+            let msg = self.to_i32().map_or("???", |err| {
+                CStr::from_ptr(pxtnError_get_string(err as pxtnERR))
+                    .to_str()
+                    .unwrap()
+            });
             write!(f, "{}", msg)
         }
     }

@@ -159,7 +159,7 @@ impl<'p> PxTone for PxToneService<'p> {
             }
 
             let mut len = 0;
-            let data = (*self.service.text).get_name_buf(&mut len) as *const u8;
+            let data = (*self.service.text).get_name_buf(&mut len).cast::<u8>();
             let arr = slice::from_raw_parts(data, len as usize);
 
             // remove interior NULL bytes
@@ -197,7 +197,7 @@ impl<'p> PxTone for PxToneService<'p> {
             }
 
             let mut len = 0;
-            let data = (*self.service.text).get_comment_buf(&mut len) as *const u8;
+            let data = (*self.service.text).get_comment_buf(&mut len).cast::<u8>();
             let arr = slice::from_raw_parts(data, len as usize);
 
             // remove interior NULL bytes
@@ -321,10 +321,8 @@ impl<'p> Moo<Error> for PxToneService<'p> {
 
     fn sample(&mut self, buffer: &mut [i16]) -> Result<(), Error> {
         if unsafe {
-            self.service.Moo(
-                buffer.as_mut_ptr() as *mut _ as *mut std::ffi::c_void,
-                buffer.len() as i32 * 2,
-            )
+            self.service
+                .Moo(buffer.as_mut_ptr().cast(), buffer.len() as i32 * 2)
         } {
             Ok(())
         } else {

@@ -28,7 +28,7 @@ impl Woice for pxtnWoice {
             }
 
             let mut len = 0;
-            let data = self.get_name_buf(&mut len) as *const u8;
+            let data = self.get_name_buf(&mut len).cast::<u8>();
             let arr = slice::from_raw_parts(data, len as usize);
 
             // remove interior NULL bytes
@@ -252,7 +252,7 @@ impl PTNOscillator for pxNOISEDESIGN_OSCILLATOR {
     }
 
     fn set_frequency(&mut self, frequency: f32) {
-        self.freq = frequency
+        self.freq = frequency;
     }
 
     fn set_volume(&mut self, volume: f32) {
