@@ -11,6 +11,10 @@ pub struct PxToneService<'p> {
 }
 
 impl<'p> PxToneService<'p> {
+    pub fn raw(&mut self) -> &mut pxtnService {
+        &mut self.service
+    }
+
     pub fn is_valid(&self) -> bool {
         unsafe { self.service.moo_is_valid_data() }
     }
