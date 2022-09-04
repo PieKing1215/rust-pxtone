@@ -218,7 +218,7 @@ impl PTNOscillator for pxNOISEDESIGN_OSCILLATOR {
     }
 
     fn set_shape(&mut self, shape: PTNWaveType) {
-        self.type_ = shape as u8 as i32;
+        self.type_ = shape as u8 as _;
     }
 
     fn set_frequency(&mut self, frequency: f32) {
