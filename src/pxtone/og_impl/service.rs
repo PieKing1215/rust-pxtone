@@ -50,7 +50,7 @@ impl<'p> PxToneServiceIO for PxToneService<'p> {
         Self: Sized,
     {
         let mut serv = unsafe { pxtnService::new() };
-        Error::from_raw(unsafe { serv.init() })?;
+        Error::from_raw(unsafe { serv.init_collage(pxtone_sys::pxtnMAX_EVENTNUM as _) })?;
 
         let mut descriptor = unsafe { pxtnDescriptor::new() };
         if !unsafe {

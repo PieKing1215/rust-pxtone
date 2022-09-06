@@ -2,7 +2,7 @@ use std::borrow::{Borrow, BorrowMut};
 
 use pxtone_sys::{pxtnEvelist, EVERECORD};
 
-use crate::interface::event::{Event, EventKind, EventList, EventListMut};
+use crate::interface::event::{AddEventError, Event, EventKind, EventList, EventListMut};
 
 impl Event for EVERECORD {
     fn kind(&self) -> EventKind {
@@ -125,6 +125,26 @@ impl<T: BorrowMut<pxtnEvelist>> EventListMut for PxToneEventList<T> {
 
     fn iter_mut(&mut self) -> Self::IM {
         EventLinkedList { raw: self.evelist.borrow_mut()._start }.into_iter()
+    }
+
+    fn add(
+        &mut self,
+        clock: i32,
+        unit_no: u8,
+        kind: EventKind,
+        value: i32,
+    ) -> Result<(), AddEventError> {
+        unsafe {
+            if self
+                .evelist
+                .borrow_mut()
+                .Record_Add_i(clock, unit_no, kind as u8, value)
+            {
+                Ok(())
+            } else {
+                Err(AddEventError { clock, unit_no, kind, value })
+            }
+        }
     }
 }
 

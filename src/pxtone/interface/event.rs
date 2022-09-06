@@ -1,3 +1,5 @@
+use std::fmt;
+
 #[repr(u8)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[allow(dead_code)]
@@ -64,8 +66,33 @@ pub trait EventList {
     fn iter(&self) -> Self::I;
 }
 
+#[derive(Debug)]
+pub struct AddEventError {
+    pub clock: i32,
+    pub unit_no: u8,
+    pub kind: EventKind,
+    pub value: i32,
+}
+
+impl fmt::Display for AddEventError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Invalid Text")
+    }
+}
+
+impl std::error::Error for AddEventError {}
+
 pub trait EventListMut: EventList {
     type IM: Iterator<Item = &'static mut Self::E>;
 
     fn iter_mut(&mut self) -> Self::IM;
+
+    // TODO: make this an enum or something so you can't input invalid data
+    fn add(
+        &mut self,
+        clock: i32,
+        unit_no: u8,
+        kind: EventKind,
+        value: i32,
+    ) -> Result<(), AddEventError>;
 }
