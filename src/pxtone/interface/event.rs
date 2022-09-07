@@ -17,8 +17,47 @@ pub trait BaseEvent {
 }
 
 pub trait GenericEvent: BaseEvent {
-    fn kind(&self) -> GenericEventKindRef;
-    fn kind_mut(&mut self) -> GenericEventKindMut;
+    type On: EventOn + ?Sized;
+    type Key: EventKey + ?Sized;
+    type PanVolume: EventPanVolume + ?Sized;
+    type Velocity: EventVelocity + ?Sized;
+    type Volume: EventVolume + ?Sized;
+    type Porta: EventPorta + ?Sized;
+    type VoiceNo: EventVoiceNo + ?Sized;
+    type GroupNo: EventGroupNo + ?Sized;
+    type Tuning: EventTuning + ?Sized;
+    type PanTime: EventPanTime + ?Sized;
+
+    #[allow(clippy::type_complexity)] // I can't think of a good way to make this less complex
+    fn kind(
+        &self,
+    ) -> GenericEventKindRef<
+        Self::On,
+        Self::Key,
+        Self::PanVolume,
+        Self::Velocity,
+        Self::Volume,
+        Self::Porta,
+        Self::VoiceNo,
+        Self::GroupNo,
+        Self::Tuning,
+        Self::PanTime,
+    >;
+    #[allow(clippy::type_complexity)] // I can't think of a good way to make this less complex
+    fn kind_mut(
+        &mut self,
+    ) -> GenericEventKindMut<
+        Self::On,
+        Self::Key,
+        Self::PanVolume,
+        Self::Velocity,
+        Self::Volume,
+        Self::Porta,
+        Self::VoiceNo,
+        Self::GroupNo,
+        Self::Tuning,
+        Self::PanTime,
+    >;
 }
 
 pub enum GenericEventKind<
@@ -311,52 +350,76 @@ pub trait EventPanTime: BaseEvent {
     fn set_pan_time(&mut self, pan_time: PanValue);
 }
 
-pub type GenericEventKindRef<'a> = GenericEventKind<
+pub type GenericEventKindRef<
     'a,
-    dyn EventOn + 'a,
-    dyn EventKey + 'a,
-    dyn EventPanVolume + 'a,
-    dyn EventVelocity + 'a,
-    dyn EventVolume + 'a,
-    dyn EventPorta + 'a,
-    dyn EventVoiceNo + 'a,
-    dyn EventGroupNo + 'a,
-    dyn EventTuning + 'a,
-    dyn EventPanTime + 'a,
-    BoxOrRef<'a, dyn EventOn>,
-    BoxOrRef<'a, dyn EventKey>,
-    BoxOrRef<'a, dyn EventPanVolume>,
-    BoxOrRef<'a, dyn EventVelocity>,
-    BoxOrRef<'a, dyn EventVolume>,
-    BoxOrRef<'a, dyn EventPorta>,
-    BoxOrRef<'a, dyn EventVoiceNo>,
-    BoxOrRef<'a, dyn EventGroupNo>,
-    BoxOrRef<'a, dyn EventTuning>,
-    BoxOrRef<'a, dyn EventPanTime>,
+    On,
+    Key,
+    PanVolume,
+    Velocity,
+    Volume,
+    Porta,
+    VoiceNo,
+    GroupNo,
+    Tuning,
+    PanTime,
+> = GenericEventKind<
+    'a,
+    On,
+    Key,
+    PanVolume,
+    Velocity,
+    Volume,
+    Porta,
+    VoiceNo,
+    GroupNo,
+    Tuning,
+    PanTime,
+    BoxOrRef<'a, On>,
+    BoxOrRef<'a, Key>,
+    BoxOrRef<'a, PanVolume>,
+    BoxOrRef<'a, Velocity>,
+    BoxOrRef<'a, Volume>,
+    BoxOrRef<'a, Porta>,
+    BoxOrRef<'a, VoiceNo>,
+    BoxOrRef<'a, GroupNo>,
+    BoxOrRef<'a, Tuning>,
+    BoxOrRef<'a, PanTime>,
 >;
 
-pub type GenericEventKindMut<'a> = GenericEventKind<
+pub type GenericEventKindMut<
     'a,
-    dyn EventOn + 'a,
-    dyn EventKey + 'a,
-    dyn EventPanVolume + 'a,
-    dyn EventVelocity + 'a,
-    dyn EventVolume + 'a,
-    dyn EventPorta + 'a,
-    dyn EventVoiceNo + 'a,
-    dyn EventGroupNo + 'a,
-    dyn EventTuning + 'a,
-    dyn EventPanTime + 'a,
-    BoxOrMut<'a, dyn EventOn>,
-    BoxOrMut<'a, dyn EventKey>,
-    BoxOrMut<'a, dyn EventPanVolume>,
-    BoxOrMut<'a, dyn EventVelocity>,
-    BoxOrMut<'a, dyn EventVolume>,
-    BoxOrMut<'a, dyn EventPorta>,
-    BoxOrMut<'a, dyn EventVoiceNo>,
-    BoxOrMut<'a, dyn EventGroupNo>,
-    BoxOrMut<'a, dyn EventTuning>,
-    BoxOrMut<'a, dyn EventPanTime>,
+    On,
+    Key,
+    PanVolume,
+    Velocity,
+    Volume,
+    Porta,
+    VoiceNo,
+    GroupNo,
+    Tuning,
+    PanTime,
+> = GenericEventKind<
+    'a,
+    On,
+    Key,
+    PanVolume,
+    Velocity,
+    Volume,
+    Porta,
+    VoiceNo,
+    GroupNo,
+    Tuning,
+    PanTime,
+    BoxOrMut<'a, On>,
+    BoxOrMut<'a, Key>,
+    BoxOrMut<'a, PanVolume>,
+    BoxOrMut<'a, Velocity>,
+    BoxOrMut<'a, Volume>,
+    BoxOrMut<'a, Porta>,
+    BoxOrMut<'a, VoiceNo>,
+    BoxOrMut<'a, GroupNo>,
+    BoxOrMut<'a, Tuning>,
+    BoxOrMut<'a, PanTime>,
 >;
 
 pub trait EventList {

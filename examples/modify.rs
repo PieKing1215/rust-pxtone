@@ -2,7 +2,9 @@ use std::path::Path;
 
 use pxtone::{
     interface::{
-        event::{BaseEvent, EventListMut, GenericEvent, GenericEventKind, PanValue},
+        event::{
+            BaseEvent, EventListMut, EventPanVolume, GenericEvent, GenericEventKind, PanValue,
+        },
         io::PxToneServiceIO,
         service::PxTone,
         unit::Unit,
@@ -85,7 +87,7 @@ fn do_stuff<PXTN: PxTone + PxToneServiceIO>(bytes: &[u8]) -> Result<(), PXTN::Er
                     v.units().len()
                 );
                 for (i, u) in v.units().iter().enumerate() {
-                    fn osc_to_string(osc: &dyn PTNOscillator) -> String {
+                    fn osc_to_string<O: PTNOscillator>(osc: &O) -> String {
                         format!(
                             "shape={:?} freq={:.1} vol={:.1} ofs={:.1} rev={}",
                             osc.shape(),

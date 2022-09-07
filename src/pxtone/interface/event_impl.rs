@@ -306,7 +306,31 @@ impl BaseEvent for EventImpl<'_> {
 }
 
 impl GenericEvent for EventImpl<'_> {
-    fn kind(&self) -> GenericEventKindRef {
+    type On = (BaseEventImpl, u32);
+    type Key = (BaseEventImpl, i32);
+    type PanVolume = (BaseEventImpl, PanValue);
+    type Velocity = (BaseEventImpl, ZeroToOneF32);
+    type Volume = (BaseEventImpl, ZeroToOneF32);
+    type Porta = (BaseEventImpl, u32);
+    type VoiceNo = (BaseEventImpl, u8);
+    type GroupNo = (BaseEventImpl, u8);
+    type Tuning = (BaseEventImpl, TuningValue);
+    type PanTime = (BaseEventImpl, PanValue);
+
+    fn kind(
+        &self,
+    ) -> GenericEventKindRef<
+        Self::On,
+        Self::Key,
+        Self::PanVolume,
+        Self::Velocity,
+        Self::Volume,
+        Self::Porta,
+        Self::VoiceNo,
+        Self::GroupNo,
+        Self::Tuning,
+        Self::PanTime,
+    > {
         match &self.kind {
             GenericEventKind::Invalid => GenericEventKind::Invalid,
             GenericEventKind::On(e) => GenericEventKind::On(BoxOrRef::Ref(e)),
@@ -322,8 +346,20 @@ impl GenericEvent for EventImpl<'_> {
             GenericEventKind::_Phantom(_, _) => unreachable!(),
         }
     }
-
-    fn kind_mut(&mut self) -> GenericEventKindMut {
+    fn kind_mut(
+        &mut self,
+    ) -> GenericEventKindMut<
+        Self::On,
+        Self::Key,
+        Self::PanVolume,
+        Self::Velocity,
+        Self::Volume,
+        Self::Porta,
+        Self::VoiceNo,
+        Self::GroupNo,
+        Self::Tuning,
+        Self::PanTime,
+    > {
         match &mut self.kind {
             GenericEventKind::Invalid => GenericEventKind::Invalid,
             GenericEventKind::On(e) => GenericEventKind::On(BoxOrMut::Ref(e)),

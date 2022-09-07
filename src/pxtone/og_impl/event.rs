@@ -8,9 +8,9 @@ use pxtone_sys::{pxtnEvelist, EVERECORD};
 use crate::{
     interface::event::{
         AddEventError, BaseEvent, EventGroupNo, EventKey, EventList, EventListMut, EventOn,
-        EventPanTime, EventPanVolume, EventTuning, EventVelocity, EventVoiceNo, EventVolume,
-        GenericEvent, GenericEventKind, GenericEventKindMut, GenericEventKindRef, PanValue,
-        TuningValue, ZeroToOneF32,
+        EventPanTime, EventPanVolume, EventPorta, EventTuning, EventVelocity, EventVoiceNo,
+        EventVolume, GenericEvent, GenericEventKind, GenericEventKindMut, GenericEventKindRef,
+        PanValue, TuningValue, ZeroToOneF32,
     },
     pxtone::util::{BoxOrMut, BoxOrRef},
 };
@@ -161,7 +161,31 @@ impl BaseEvent for EVERECORD {
 }
 
 impl GenericEvent for EVERECORD {
-    fn kind(&self) -> GenericEventKindRef {
+    type On = Self;
+    type Key = Self;
+    type PanVolume = Self;
+    type Velocity = Self;
+    type Volume = Self;
+    type Porta = Self;
+    type VoiceNo = Self;
+    type GroupNo = Self;
+    type Tuning = Self;
+    type PanTime = Self;
+
+    fn kind(
+        &self,
+    ) -> GenericEventKindRef<
+        Self::On,
+        Self::Key,
+        Self::PanVolume,
+        Self::Velocity,
+        Self::Volume,
+        Self::Porta,
+        Self::VoiceNo,
+        Self::GroupNo,
+        Self::Tuning,
+        Self::PanTime,
+    > {
         match EventKind::from(self.kind) {
             EventKind::On => GenericEventKind::On(BoxOrRef::Ref(self)),
             EventKind::Key => GenericEventKind::Key(BoxOrRef::Ref(self)),
@@ -176,7 +200,20 @@ impl GenericEvent for EVERECORD {
         }
     }
 
-    fn kind_mut(&mut self) -> GenericEventKindMut {
+    fn kind_mut(
+        &mut self,
+    ) -> GenericEventKindMut<
+        Self::On,
+        Self::Key,
+        Self::PanVolume,
+        Self::Velocity,
+        Self::Volume,
+        Self::Porta,
+        Self::VoiceNo,
+        Self::GroupNo,
+        Self::Tuning,
+        Self::PanTime,
+    > {
         match EventKind::from(self.kind) {
             EventKind::On => GenericEventKind::On(BoxOrMut::Ref(self)),
             EventKind::Key => GenericEventKind::Key(BoxOrMut::Ref(self)),
@@ -220,6 +257,16 @@ impl EventPanVolume for EVERECORD {
 
     fn set_pan_volume(&mut self, pan_volume: PanValue) {
         self.value = ((*pan_volume / 2.0 + 0.5) * 128.0) as _;
+    }
+}
+
+impl EventPorta for EVERECORD {
+    fn porta(&self) -> u32 {
+        self.value as _
+    }
+
+    fn set_porta(&mut self, porta: u32) {
+        self.value = porta as _;
     }
 }
 
