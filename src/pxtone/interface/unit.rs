@@ -3,11 +3,7 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
-use super::{
-    event::{EventList, EventListMut},
-    service::{InvalidText, PxTone},
-    woice::{Woices, WoicesMut},
-};
+use super::service::{InvalidText, PxTone};
 
 pub trait Unit {
     fn selected(&self) -> bool;
@@ -26,16 +22,7 @@ pub struct Units<'a, U: Unit> {
 }
 
 impl<'a, U: Unit> Units<'a, U> {
-    pub fn new<EL: EventList, ELM: EventListMut, W: Woices, WM: WoicesMut>(
-        _pxtn: &'a dyn PxTone<
-            Unit = U,
-            EventList = EL,
-            EventListMut = ELM,
-            Woices = W,
-            WoicesMut = WM,
-        >,
-        v: Vec<U>,
-    ) -> Self {
+    pub fn new<P: PxTone>(_pxtn: &'a P, v: Vec<U>) -> Self {
         Self { _phantom: PhantomData, v }
     }
 }
@@ -54,16 +41,7 @@ pub struct UnitsMut<'a, U: Unit> {
 }
 
 impl<'a, U: Unit> UnitsMut<'a, U> {
-    pub fn new<EL: EventList, ELM: EventListMut, W: Woices, WM: WoicesMut>(
-        _pxtn: &'a mut dyn PxTone<
-            Unit = U,
-            EventList = EL,
-            EventListMut = ELM,
-            Woices = W,
-            WoicesMut = WM,
-        >,
-        v: Vec<U>,
-    ) -> Self {
+    pub fn new<P: PxTone>(_pxtn: &'a mut P, v: Vec<U>) -> Self {
         Self { _phantom: PhantomData, v }
     }
 }
