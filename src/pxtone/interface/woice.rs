@@ -8,45 +8,115 @@ use super::service::InvalidText;
 
 pub enum WoiceType<
     'a,
-    PCM: Borrow<dyn WoicePCM<'a> + 'a>,
-    PTV: Borrow<dyn WoicePTV + 'a>,
-    PTN: Borrow<dyn WoicePTN<'a> + 'a>,
-    OGGV: Borrow<dyn WoiceOGGV<'a> + 'a>,
+    VPCM: VoicePCM + 'a + ?Sized,
+    VPTV: VoicePTV + 'a + ?Sized,
+    VPTN: VoicePTN + 'a + ?Sized,
+    VOGGV: VoiceOGGV + 'a + ?Sized,
+    PCM: WoicePCM<VPCM> + 'a + ?Sized,
+    PTV: WoicePTV<VPTV> + 'a + ?Sized,
+    PTN: WoicePTN<VPTN> + 'a + ?Sized,
+    OGGV: WoiceOGGV<VOGGV> + 'a + ?Sized,
+    BPCM: Borrow<PCM>,
+    BPTV: Borrow<PTV>,
+    BPTN: Borrow<PTN>,
+    BOGGV: Borrow<OGGV>,
 > {
     None,
-    PCM(PCM),
-    PTV(PTV),
-    PTN(PTN),
-    OGGV(OGGV),
+    PCM(BPCM),
+    PTV(BPTV),
+    PTN(BPTN),
+    OGGV(BOGGV),
 
     // TODO: consider other ways to do this
     // relevant: https://github.com/rust-lang/rust/issues/32739
     /// Implementation detail needed to hold a lifetime.
-    _Phantom(Infallible, PhantomData<&'a ()>),
+    #[allow(clippy::type_complexity)]
+    _Phantom(
+        Infallible,
+        PhantomData<&'a (
+            &'a VPCM,
+            &'a VPTV,
+            &'a VPTN,
+            &'a VOGGV,
+            &'a PCM,
+            &'a PTV,
+            &'a PTN,
+            &'a OGGV,
+        )>,
+    ),
 }
 
-pub type WoiceTypeRef<'a> = WoiceType<
+pub type WoiceTypeRef<'a, VPCM, VPTV, VPTN, VOGGV, PCM, PTV, PTN, OGGV> = WoiceType<
     'a,
-    BoxOrRef<'a, dyn WoicePCM<'a>>,
-    BoxOrRef<'a, dyn WoicePTV>,
-    BoxOrRef<'a, dyn WoicePTN<'a>>,
-    BoxOrRef<'a, dyn WoiceOGGV<'a>>,
+    VPCM,
+    VPTV,
+    VPTN,
+    VOGGV,
+    PCM,
+    PTV,
+    PTN,
+    OGGV,
+    BoxOrRef<'a, PCM>,
+    BoxOrRef<'a, PTV>,
+    BoxOrRef<'a, PTN>,
+    BoxOrRef<'a, OGGV>,
 >;
 
-pub type WoiceTypeMut<'a> = WoiceType<
+pub type WoiceTypeMut<'a, VPCM, VPTV, VPTN, VOGGV, PCM, PTV, PTN, OGGV> = WoiceType<
     'a,
-    BoxOrMut<'a, dyn WoicePCM<'a>>,
-    BoxOrMut<'a, dyn WoicePTV>,
-    BoxOrMut<'a, dyn WoicePTN<'a>>,
-    BoxOrMut<'a, dyn WoiceOGGV<'a>>,
+    VPCM,
+    VPTV,
+    VPTN,
+    VOGGV,
+    PCM,
+    PTV,
+    PTN,
+    OGGV,
+    BoxOrMut<'a, PCM>,
+    BoxOrMut<'a, PTV>,
+    BoxOrMut<'a, PTN>,
+    BoxOrMut<'a, OGGV>,
 >;
 
 pub trait Woice {
+    type VPCM: VoicePCM;
+    type VPTV: VoicePTV;
+    type VPTN: VoicePTN;
+    type VOGGV: VoiceOGGV;
+    type PCM: WoicePCM<Self::VPCM>;
+    type PTV: WoicePTV<Self::VPTV>;
+    type PTN: WoicePTN<Self::VPTN>;
+    type OGGV: WoiceOGGV<Self::VOGGV>;
+
     fn name(&self) -> String;
     fn set_name(&mut self, name: String) -> Result<(), InvalidText>;
 
-    fn woice_type(&self) -> WoiceTypeRef;
-    fn woice_type_mut(&mut self) -> WoiceTypeMut;
+    #[allow(clippy::type_complexity)] // I can't think of a good way to make this less complex
+    fn woice_type(
+        &self,
+    ) -> WoiceTypeRef<
+        Self::VPCM,
+        Self::VPTV,
+        Self::VPTN,
+        Self::VOGGV,
+        Self::PCM,
+        Self::PTV,
+        Self::PTN,
+        Self::OGGV,
+    >;
+    #[allow(clippy::type_complexity)] // I can't think of a good way to make this less complex
+    fn woice_type_mut(
+        &mut self,
+    ) -> WoiceTypeMut<
+        Self::VPCM,
+        Self::VPTV,
+        Self::VPTN,
+        Self::VOGGV,
+        Self::PCM,
+        Self::PTV,
+        Self::PTN,
+        Self::OGGV,
+    >;
     // fn set_woice_type(&mut self, w_type: WoiceType);
 }
 
@@ -82,10 +152,12 @@ pub trait PTVCoordinateWavePoint {
 }
 
 pub trait PTVCoordinateWave {
+    type Point: PTVCoordinateWavePoint;
+
     /// Maximum x coordinate, normally 200
     fn resolution(&self) -> u32;
 
-    fn points(&self) -> Vec<&dyn PTVCoordinateWavePoint>;
+    fn points(&self) -> Vec<&Self::Point>;
 }
 
 pub trait PTVOvertoneWaveTone {
@@ -97,17 +169,22 @@ pub trait PTVOvertoneWaveTone {
 }
 
 pub trait PTVOvertoneWave {
+    type Tone: PTVOvertoneWaveTone;
+
     // TODO: might be a better word for this
-    fn tones(&self) -> Vec<&dyn PTVOvertoneWaveTone>;
+    fn tones(&self) -> Vec<&Self::Tone>;
 }
 
-pub enum PTVWaveType<'a> {
-    Coordinate(&'a dyn PTVCoordinateWave),
-    Overtone(&'a dyn PTVOvertoneWave),
+pub enum PTVWaveType<'a, C: PTVCoordinateWave, O: PTVOvertoneWave> {
+    Coordinate(&'a C),
+    Overtone(&'a O),
 }
 
 pub trait VoicePTV: Voice {
-    fn wave(&self) -> PTVWaveType;
+    type CoordinateWave: PTVCoordinateWave;
+    type OvertoneWave: PTVOvertoneWave;
+
+    fn wave(&self) -> PTVWaveType<Self::CoordinateWave, Self::OvertoneWave>;
 }
 
 #[repr(u8)]
@@ -214,24 +291,29 @@ pub trait PTNEnvelopePoint {
 }
 
 pub trait PTNUnit {
+    type EnvelopePoint: PTNEnvelopePoint;
+    type Oscillator: PTNOscillator;
+
     fn enabled(&self) -> bool;
-    fn envelope(&self) -> Vec<&dyn PTNEnvelopePoint>;
+    fn envelope(&self) -> Vec<&Self::EnvelopePoint>;
 
     /// Normally within `-100..=100`
     fn pan(&self) -> i8;
 
-    fn osc_main(&self) -> &dyn PTNOscillator;
-    fn osc_frequency(&self) -> &dyn PTNOscillator;
-    fn osc_volume(&self) -> &dyn PTNOscillator;
+    fn osc_main(&self) -> &Self::Oscillator;
+    fn osc_frequency(&self) -> &Self::Oscillator;
+    fn osc_volume(&self) -> &Self::Oscillator;
 }
 
 pub trait VoicePTN: VoicePCM {
+    type Unit: PTNUnit;
+
     /// Number of samples. Capped to 480000 in OG pxtone.
     ///
     /// PTNs are always 44100kHz so you can do `sample_num() / 44100.0` to get the length in seconds
     fn ptn_sample_num(&self) -> u32;
 
-    fn units(&self) -> Vec<&dyn PTNUnit>;
+    fn units(&self) -> Vec<&Self::Unit>;
 }
 
 pub trait VoiceOGGV: VoicePCM {
@@ -245,23 +327,20 @@ pub trait VoiceOGGV: VoicePCM {
     fn ogg_data(&self) -> &[u8];
 }
 
-pub trait SingleVoice<'a, V: Voice + 'a + ?Sized> {
+pub trait SingleVoice<V: Voice + ?Sized> {
     fn voice(&self) -> &V;
     fn voice_mut(&mut self) -> &mut V;
 }
 
-pub trait WoicePCM<'a>: SingleVoice<'a, dyn VoicePCM> {}
+pub trait WoicePCM<V: VoicePCM + ?Sized>: SingleVoice<V> {}
 
-pub trait WoicePTV {
-    fn voices(&self) -> Vec<&dyn VoicePTV>;
+pub trait WoicePTV<V: VoicePTV + ?Sized> {
+    fn voices(&self) -> Vec<&V>;
 }
 
-pub trait WoicePTN<'a>: SingleVoice<'a, dyn VoicePTN> {}
+pub trait WoicePTN<V: VoicePTN + ?Sized>: SingleVoice<V> {}
 
-pub trait WoiceOGGV<'a>: SingleVoice<'a, dyn VoiceOGGV> {}
-
-// you can implement `IntoIterator` for `&dyn Woices` but not for `<W: Woices> &W`
-// and the impl for `&dyn Woices` isn't very useful becuase you have to manually cast it anyway
+pub trait WoiceOGGV<V: VoiceOGGV + ?Sized>: SingleVoice<V> {}
 
 pub trait Woices {
     type W: Woice;

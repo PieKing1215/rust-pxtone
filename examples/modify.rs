@@ -6,7 +6,10 @@ use pxtone::{
         io::PxToneServiceIO,
         service::PxTone,
         unit::Unit,
-        woice::{PTNOscillator, PTVWaveType, Woice, WoiceType, WoicesMut},
+        woice::{
+            PTNOscillator, PTNUnit, PTVCoordinateWave, PTVOvertoneWave, PTVWaveType, SingleVoice,
+            VoiceOGGV, VoicePCM, VoicePTN, VoicePTV, Woice, WoicePTV, WoiceType, WoicesMut,
+        },
     },
     og_impl::service::PxToneService,
 };
