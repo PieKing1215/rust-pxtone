@@ -2,7 +2,7 @@ use std::path::Path;
 
 use pxtone::{
     interface::{
-        event::{EventListMut, GenericEventKind, PanValue},
+        event::{BaseEvent, EventListMut, GenericEvent, GenericEventKind, PanValue},
         io::PxToneServiceIO,
         service::PxTone,
         unit::Unit,

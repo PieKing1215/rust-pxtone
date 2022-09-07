@@ -21,51 +21,85 @@ pub trait GenericEvent: BaseEvent {
     fn kind_mut(&mut self) -> GenericEventKindMut;
 }
 
-// TODO: consider making this not an enum and using traits and Downcast or something instead
 pub enum GenericEventKind<
     'a,
-    On: Borrow<dyn EventOn + 'a>,
-    Key: Borrow<dyn EventKey + 'a>,
-    PanVolume: Borrow<dyn EventPanVolume + 'a>,
-    Velocity: Borrow<dyn EventVelocity + 'a>,
-    Volume: Borrow<dyn EventVolume + 'a>,
-    Porta: Borrow<dyn EventPorta + 'a>,
-    VoiceNo: Borrow<dyn EventVoiceNo + 'a>,
-    GroupNo: Borrow<dyn EventGroupNo + 'a>,
-    Tuning: Borrow<dyn EventTuning + 'a>,
-    PanTime: Borrow<dyn EventPanTime + 'a>,
+    On: EventOn + ?Sized,
+    Key: EventKey + ?Sized,
+    PanVolume: EventPanVolume + ?Sized,
+    Velocity: EventVelocity + ?Sized,
+    Volume: EventVolume + ?Sized,
+    Porta: EventPorta + ?Sized,
+    VoiceNo: EventVoiceNo + ?Sized,
+    GroupNo: EventGroupNo + ?Sized,
+    Tuning: EventTuning + ?Sized,
+    PanTime: EventPanTime + ?Sized,
+    BOn: Borrow<On>,
+    BKey: Borrow<Key>,
+    BPanVolume: Borrow<PanVolume>,
+    BVelocity: Borrow<Velocity>,
+    BVolume: Borrow<Volume>,
+    BPorta: Borrow<Porta>,
+    BVoiceNo: Borrow<VoiceNo>,
+    BGroupNo: Borrow<GroupNo>,
+    BTuning: Borrow<Tuning>,
+    BPanTime: Borrow<PanTime>,
 > {
     Invalid,
-    On(On),
-    Key(Key),
-    PanVolume(PanVolume),
-    Velocity(Velocity),
-    Volume(Volume),
-    Porta(Porta),
-    VoiceNo(VoiceNo),
-    GroupNo(GroupNo),
-    Tuning(Tuning),
-    PanTime(PanTime),
+    On(BOn),
+    Key(BKey),
+    PanVolume(BPanVolume),
+    Velocity(BVelocity),
+    Volume(BVolume),
+    Porta(BPorta),
+    VoiceNo(BVoiceNo),
+    GroupNo(BGroupNo),
+    Tuning(BTuning),
+    PanTime(BPanTime),
 
     // TODO: consider other ways to do this
     // relevant: https://github.com/rust-lang/rust/issues/32739
-    /// Implementation detail needed to hold a lifetime.
-    _Phantom(Infallible, PhantomData<&'a ()>),
+    /// Implementation detail needed to manipulate lifetimes/generics.
+    #[allow(clippy::type_complexity)]
+    _Phantom(
+        Infallible,
+        PhantomData<&'a (
+            &'a On,
+            &'a Key,
+            &'a PanVolume,
+            &'a Velocity,
+            &'a Volume,
+            &'a Porta,
+            &'a VoiceNo,
+            &'a GroupNo,
+            &'a Tuning,
+            &'a PanTime,
+        )>,
+    ),
 }
 
 // impl Debug for GenericEventKind
 impl<
         'a,
-        On: Borrow<dyn EventOn + 'a>,
-        Key: Borrow<dyn EventKey + 'a>,
-        PanVolume: Borrow<dyn EventPanVolume + 'a>,
-        Velocity: Borrow<dyn EventVelocity + 'a>,
-        Volume: Borrow<dyn EventVolume + 'a>,
-        Porta: Borrow<dyn EventPorta + 'a>,
-        VoiceNo: Borrow<dyn EventVoiceNo + 'a>,
-        GroupNo: Borrow<dyn EventGroupNo + 'a>,
-        Tuning: Borrow<dyn EventTuning + 'a>,
-        PanTime: Borrow<dyn EventPanTime + 'a>,
+        On: EventOn + ?Sized,
+        Key: EventKey + ?Sized,
+        PanVolume: EventPanVolume + ?Sized,
+        Velocity: EventVelocity + ?Sized,
+        Volume: EventVolume + ?Sized,
+        Porta: EventPorta + ?Sized,
+        VoiceNo: EventVoiceNo + ?Sized,
+        GroupNo: EventGroupNo + ?Sized,
+        Tuning: EventTuning + ?Sized,
+        PanTime: EventPanTime + ?Sized,
+        BOn: Borrow<On>,
+        BKey: Borrow<Key>,
+        BPanVolume: Borrow<PanVolume>,
+        BVelocity: Borrow<Velocity>,
+        BVolume: Borrow<Volume>,
+        BPorta: Borrow<Porta>,
+        BVoiceNo: Borrow<VoiceNo>,
+        BGroupNo: Borrow<GroupNo>,
+        BTuning: Borrow<Tuning>,
+        BPanTime: Borrow<PanTime>,
     > Debug
     for GenericEventKind<
         'a,
@@ -79,6 +113,16 @@ impl<
         GroupNo,
         Tuning,
         PanTime,
+        BOn,
+        BKey,
+        BPanVolume,
+        BVelocity,
+        BVolume,
+        BPorta,
+        BVoiceNo,
+        BGroupNo,
+        BTuning,
+        BPanTime,
     >
 {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -269,6 +313,16 @@ pub trait EventPanTime: BaseEvent {
 
 pub type GenericEventKindRef<'a> = GenericEventKind<
     'a,
+    dyn EventOn + 'a,
+    dyn EventKey + 'a,
+    dyn EventPanVolume + 'a,
+    dyn EventVelocity + 'a,
+    dyn EventVolume + 'a,
+    dyn EventPorta + 'a,
+    dyn EventVoiceNo + 'a,
+    dyn EventGroupNo + 'a,
+    dyn EventTuning + 'a,
+    dyn EventPanTime + 'a,
     BoxOrRef<'a, dyn EventOn>,
     BoxOrRef<'a, dyn EventKey>,
     BoxOrRef<'a, dyn EventPanVolume>,
@@ -283,6 +337,16 @@ pub type GenericEventKindRef<'a> = GenericEventKind<
 
 pub type GenericEventKindMut<'a> = GenericEventKind<
     'a,
+    dyn EventOn + 'a,
+    dyn EventKey + 'a,
+    dyn EventPanVolume + 'a,
+    dyn EventVelocity + 'a,
+    dyn EventVolume + 'a,
+    dyn EventPorta + 'a,
+    dyn EventVoiceNo + 'a,
+    dyn EventGroupNo + 'a,
+    dyn EventTuning + 'a,
+    dyn EventPanTime + 'a,
     BoxOrMut<'a, dyn EventOn>,
     BoxOrMut<'a, dyn EventKey>,
     BoxOrMut<'a, dyn EventPanVolume>,
@@ -296,7 +360,9 @@ pub type GenericEventKindMut<'a> = GenericEventKind<
 >;
 
 pub trait EventList {
-    fn iter(&self) -> Box<dyn Iterator<Item = &dyn GenericEvent>>;
+    type Event: GenericEvent;
+
+    fn iter(&self) -> Box<dyn Iterator<Item = &Self::Event>>;
 }
 
 #[derive(Debug)]
@@ -311,8 +377,8 @@ impl fmt::Display for AddEventError {
 impl std::error::Error for AddEventError {}
 
 pub trait EventListMut: EventList {
-    fn iter_mut(&mut self) -> Box<dyn Iterator<Item = &mut dyn GenericEvent>>;
+    fn iter_mut(&mut self) -> Box<dyn Iterator<Item = &mut Self::Event>>;
 
     // TODO: make this an enum or something so you can't input invalid data
-    fn add(&mut self, event: &dyn GenericEvent) -> Result<(), AddEventError>;
+    fn add<E: GenericEvent>(&mut self, event: &E) -> Result<(), AddEventError>;
 }

@@ -287,15 +287,15 @@ impl EventPanTime for EVERECORD {
 }
 
 impl<T: BorrowMut<pxtnEvelist>> EventListMut for PxToneEventList<T> {
-    fn iter_mut(&mut self) -> Box<dyn Iterator<Item = &mut dyn GenericEvent>> {
+    fn iter_mut(&mut self) -> Box<dyn Iterator<Item = &mut Self::Event>> {
         Box::new(
             EventLinkedList { raw: self.evelist.borrow_mut()._start }
                 .into_iter()
-                .map(|e: &'static mut EVERECORD| e as &mut dyn GenericEvent),
+                .map(|e| e as &'static mut EVERECORD),
         )
     }
 
-    fn add(&mut self, event: &dyn GenericEvent) -> Result<(), AddEventError> {
+    fn add<E: GenericEvent>(&mut self, event: &E) -> Result<(), AddEventError> {
         unsafe {
             let (kind, value) = match event.kind() {
                 GenericEventKind::On(e) => (EventKind::On, e.length() as _),
@@ -334,13 +334,15 @@ impl<T: BorrowMut<pxtnEvelist>> EventListMut for PxToneEventList<T> {
 }
 
 impl<T: Borrow<pxtnEvelist>> EventList for PxToneEventList<T> {
-    fn iter(&self) -> Box<dyn Iterator<Item = &dyn GenericEvent>> {
+    type Event = EVERECORD;
+
+    fn iter(&self) -> Box<dyn Iterator<Item = &Self::Event>> {
         Box::new(
             EventLinkedList {
                 raw: self.evelist.borrow()._start as *const EVERECORD,
             }
             .into_iter()
-            .map(|e: &'static EVERECORD| e as &dyn GenericEvent),
+            .map(|e| e as &'static EVERECORD),
         )
     }
 }
