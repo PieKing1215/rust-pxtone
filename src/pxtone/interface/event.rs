@@ -8,17 +8,20 @@ use std::{
 
 use crate::pxtone::util::{BoxOrMut, BoxOrRef};
 
-pub trait GenericEvent {
+pub trait BaseEvent {
     fn clock(&self) -> u32;
     fn set_clock(&mut self, clock: u32);
 
     fn unit_no(&self) -> u8;
     fn set_unit_no(&mut self, unit_no: u8);
+}
 
+pub trait GenericEvent: BaseEvent {
     fn kind(&self) -> GenericEventKindRef;
     fn kind_mut(&mut self) -> GenericEventKindMut;
 }
 
+// TODO: consider making this not an enum and using traits and Downcast or something instead
 pub enum GenericEventKind<
     'a,
     On: Borrow<dyn EventOn + 'a>,
@@ -113,12 +116,12 @@ impl<
     }
 }
 
-pub trait EventOn {
+pub trait EventOn: BaseEvent {
     fn length(&self) -> u32;
     fn set_length(&mut self, length: u32);
 }
 
-pub trait EventKey {
+pub trait EventKey: BaseEvent {
     fn key(&self) -> i32;
     fn set_key(&mut self, key: i32);
 }
@@ -168,7 +171,7 @@ impl Deref for PanValue {
     }
 }
 
-pub trait EventPanVolume {
+pub trait EventPanVolume: BaseEvent {
     fn pan_volume(&self) -> PanValue;
     fn set_pan_volume(&mut self, pan_volume: PanValue);
 }
@@ -201,27 +204,27 @@ impl Deref for ZeroToOneF32 {
     }
 }
 
-pub trait EventVelocity {
+pub trait EventVelocity: BaseEvent {
     fn velocity(&self) -> ZeroToOneF32;
     fn set_velocity(&mut self, velocity: ZeroToOneF32);
 }
 
-pub trait EventVolume {
+pub trait EventVolume: BaseEvent {
     fn volume(&self) -> ZeroToOneF32;
     fn set_volume(&mut self, volume: ZeroToOneF32);
 }
 
-pub trait EventPorta {
+pub trait EventPorta: BaseEvent {
     fn porta(&self) -> u32;
     fn set_porta(&mut self, porta: u32);
 }
 
-pub trait EventVoiceNo {
+pub trait EventVoiceNo: BaseEvent {
     fn voice_no(&self) -> u8;
     fn set_voice_no(&mut self, voice_no: u8);
 }
 
-pub trait EventGroupNo {
+pub trait EventGroupNo: BaseEvent {
     fn group_no(&self) -> u8;
     fn set_group_no(&mut self, group_no: u8);
 }
@@ -254,12 +257,12 @@ impl Deref for TuningValue {
     }
 }
 
-pub trait EventTuning {
+pub trait EventTuning: BaseEvent {
     fn tuning(&self) -> TuningValue;
     fn set_tuning(&mut self, tuning: TuningValue);
 }
 
-pub trait EventPanTime {
+pub trait EventPanTime: BaseEvent {
     fn pan_time(&self) -> PanValue;
     fn set_pan_time(&mut self, pan_time: PanValue);
 }

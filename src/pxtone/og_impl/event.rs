@@ -7,10 +7,10 @@ use pxtone_sys::{pxtnEvelist, EVERECORD};
 
 use crate::{
     interface::event::{
-        AddEventError, EventGroupNo, EventKey, EventList, EventListMut, EventOn, EventPanTime,
-        EventPanVolume, EventTuning, EventVelocity, EventVoiceNo, EventVolume, GenericEvent,
-        GenericEventKind, GenericEventKindMut, GenericEventKindRef, PanValue, TuningValue,
-        ZeroToOneF32,
+        AddEventError, BaseEvent, EventGroupNo, EventKey, EventList, EventListMut, EventOn,
+        EventPanTime, EventPanVolume, EventTuning, EventVelocity, EventVoiceNo, EventVolume,
+        GenericEvent, GenericEventKind, GenericEventKindMut, GenericEventKindRef, PanValue,
+        TuningValue, ZeroToOneF32,
     },
     pxtone::util::{BoxOrMut, BoxOrRef},
 };
@@ -142,7 +142,7 @@ impl From<u8> for EventKind {
     }
 }
 
-impl GenericEvent for EVERECORD {
+impl BaseEvent for EVERECORD {
     fn clock(&self) -> u32 {
         self.clock as u32
     }
@@ -158,7 +158,9 @@ impl GenericEvent for EVERECORD {
     fn set_unit_no(&mut self, unit_no: u8) {
         self.unit_no = unit_no;
     }
+}
 
+impl GenericEvent for EVERECORD {
     fn kind(&self) -> GenericEventKindRef {
         match EventKind::from(self.kind) {
             EventKind::On => GenericEventKind::On(BoxOrRef::Ref(self)),
