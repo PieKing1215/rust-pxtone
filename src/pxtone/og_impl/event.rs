@@ -12,7 +12,7 @@ use crate::{
         GenericEventKind, GenericEventKindMut, GenericEventKindRef, PanValue, TuningValue,
         ZeroToOneF32,
     },
-    pxtone::util::BoxOrRef,
+    pxtone::util::{BoxOrMut, BoxOrRef},
 };
 
 // PxToneEventList implementation
@@ -175,7 +175,18 @@ impl GenericEvent for EVERECORD {
     }
 
     fn kind_mut(&mut self) -> GenericEventKindMut {
-        todo!()
+        match EventKind::from(self.kind) {
+            EventKind::On => GenericEventKind::On(BoxOrMut::Ref(self)),
+            EventKind::Key => GenericEventKind::Key(BoxOrMut::Ref(self)),
+            EventKind::PanVolume => GenericEventKind::PanVolume(BoxOrMut::Ref(self)),
+            EventKind::Velocity => GenericEventKind::Velocity(BoxOrMut::Ref(self)),
+            EventKind::Volume => GenericEventKind::Volume(BoxOrMut::Ref(self)),
+            EventKind::VoiceNo => GenericEventKind::VoiceNo(BoxOrMut::Ref(self)),
+            EventKind::GroupNo => GenericEventKind::GroupNo(BoxOrMut::Ref(self)),
+            EventKind::Tuning => GenericEventKind::Tuning(BoxOrMut::Ref(self)),
+            EventKind::PanTime => GenericEventKind::PanTime(BoxOrMut::Ref(self)),
+            _ => GenericEventKind::Invalid,
+        }
     }
 }
 

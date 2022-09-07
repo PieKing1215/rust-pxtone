@@ -149,7 +149,7 @@ impl GenericEvent for EventImpl<'_> {
 
     fn kind(&self) -> GenericEventKindRef {
         match &self.kind {
-            GenericEventKind::Invalid => todo!(),
+            GenericEventKind::Invalid => GenericEventKind::Invalid,
             GenericEventKind::On(e) => GenericEventKind::On(BoxOrRef::Ref(e.borrow())),
             GenericEventKind::Key(e) => GenericEventKind::Key(BoxOrRef::Ref(e.borrow())),
             GenericEventKind::PanVolume(e) => {
@@ -168,7 +168,7 @@ impl GenericEvent for EventImpl<'_> {
 
     fn kind_mut(&mut self) -> GenericEventKindMut {
         match &mut self.kind {
-            GenericEventKind::Invalid => todo!(),
+            GenericEventKind::Invalid => GenericEventKind::Invalid,
             GenericEventKind::On(e) => GenericEventKind::On(BoxOrMut::Ref(&mut **e)),
             GenericEventKind::Key(e) => GenericEventKind::Key(BoxOrMut::Ref(&mut **e)),
             GenericEventKind::PanVolume(e) => GenericEventKind::PanVolume(BoxOrMut::Ref(&mut **e)),
