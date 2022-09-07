@@ -2,7 +2,7 @@ use std::path::Path;
 
 use pxtone::{
     interface::{
-        event::{Event, EventKind, EventListMut},
+        event::{EventListMut, GenericEventKind, PanValue},
         io::PxToneServiceIO,
         service::PxTone,
         unit::Unit,
@@ -121,13 +121,14 @@ fn do_stuff<PXTN: PxTone + PxToneServiceIO>(bytes: &[u8]) -> Result<(), PXTN::Er
     // edit some events
     for event in pxtone.event_list_mut().iter_mut() {
         // time warp all events
-        event.set_clock(event.clock() + ((event.clock() as f32 / 400.0).sin() * 100.0) as i32);
+        event.set_clock(event.clock() + ((event.clock() as f32 / 400.0).sin() * 100.0) as u32);
 
         // flip volume pan
         #[allow(clippy::single_match)]
-        match event.kind() {
-            EventKind::PanVolume => {
-                event.set_value(128 - event.value());
+        match &mut event.kind_mut() {
+            GenericEventKind::PanVolume(e) => {
+                let e = &mut **e;
+                e.set_pan_volume(PanValue::new(-*e.pan_volume()));
             },
             _ => {},
         }

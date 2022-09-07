@@ -6,6 +6,7 @@ use std::{
 /// Wrapper around either a `Box<T>` or `&T`
 ///
 /// `Deref`s into `&T`
+#[derive(Debug)]
 pub enum BoxOrRef<'a, T: 'a + ?Sized> {
     Ref(&'a T),
     Box(Box<T>),
@@ -43,6 +44,7 @@ impl<'a, T: 'a + ?Sized> From<&'a T> for BoxOrRef<'a, T> {
 /// Wrapper around either a `Box<T>` or `&mut T`
 ///
 /// `Deref`s into `&mut T`
+#[derive(Debug)]
 pub enum BoxOrMut<'a, T: 'a + ?Sized> {
     Ref(&'a mut T),
     Box(Box<T>),
