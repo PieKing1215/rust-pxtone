@@ -20,16 +20,16 @@ pub type EventKindImpl<'a> = GenericEventKind<
     (BaseEventImpl, u8),
     (BaseEventImpl, TuningValue),
     (BaseEventImpl, PanValue),
-    Box<(BaseEventImpl, u32)>,
-    Box<(BaseEventImpl, i32)>,
-    Box<(BaseEventImpl, PanValue)>,
-    Box<(BaseEventImpl, ZeroToOneF32)>,
-    Box<(BaseEventImpl, ZeroToOneF32)>,
-    Box<(BaseEventImpl, u32)>,
-    Box<(BaseEventImpl, u8)>,
-    Box<(BaseEventImpl, u8)>,
-    Box<(BaseEventImpl, TuningValue)>,
-    Box<(BaseEventImpl, PanValue)>,
+    (BaseEventImpl, u32),
+    (BaseEventImpl, i32),
+    (BaseEventImpl, PanValue),
+    (BaseEventImpl, ZeroToOneF32),
+    (BaseEventImpl, ZeroToOneF32),
+    (BaseEventImpl, u32),
+    (BaseEventImpl, u8),
+    (BaseEventImpl, u8),
+    (BaseEventImpl, TuningValue),
+    (BaseEventImpl, PanValue),
 >;
 
 pub struct BaseEventImpl {
@@ -63,89 +63,86 @@ impl EventImpl<'_> {
     #[must_use]
     pub fn on(clock: u32, unit_no: u8, length: u32) -> Self {
         Self {
-            kind: EventKindImpl::On(Box::new((BaseEventImpl { clock, unit_no }, length))),
+            kind: EventKindImpl::On((BaseEventImpl { clock, unit_no }, length)),
         }
     }
 
     #[must_use]
     pub fn key(clock: u32, unit_no: u8, key: i32) -> Self {
         Self {
-            kind: EventKindImpl::Key(Box::new((BaseEventImpl { clock, unit_no }, key))),
+            kind: EventKindImpl::Key((BaseEventImpl { clock, unit_no }, key)),
         }
     }
 
     #[must_use]
     pub fn pan_volume(clock: u32, unit_no: u8, pan_volume: PanValue) -> Self {
         Self {
-            kind: EventKindImpl::PanVolume(Box::new((
-                BaseEventImpl { clock, unit_no },
-                pan_volume,
-            ))),
+            kind: EventKindImpl::PanVolume((BaseEventImpl { clock, unit_no }, pan_volume)),
         }
     }
 
     #[must_use]
     pub fn velocity(clock: u32, unit_no: u8, velocity: ZeroToOneF32) -> Self {
         Self {
-            kind: EventKindImpl::Velocity(Box::new((BaseEventImpl { clock, unit_no }, velocity))),
+            kind: EventKindImpl::Velocity((BaseEventImpl { clock, unit_no }, velocity)),
         }
     }
 
     #[must_use]
     pub fn volume(clock: u32, unit_no: u8, volume: ZeroToOneF32) -> Self {
         Self {
-            kind: EventKindImpl::Volume(Box::new((BaseEventImpl { clock, unit_no }, volume))),
+            kind: EventKindImpl::Volume((BaseEventImpl { clock, unit_no }, volume)),
         }
     }
 
     #[must_use]
     pub fn porta(clock: u32, unit_no: u8, porta: u32) -> Self {
         Self {
-            kind: EventKindImpl::Porta(Box::new((BaseEventImpl { clock, unit_no }, porta))),
+            kind: EventKindImpl::Porta((BaseEventImpl { clock, unit_no }, porta)),
         }
     }
 
     #[must_use]
     pub fn voice_no(clock: u32, unit_no: u8, voice_no: u8) -> Self {
         Self {
-            kind: EventKindImpl::VoiceNo(Box::new((BaseEventImpl { clock, unit_no }, voice_no))),
+            kind: EventKindImpl::VoiceNo((BaseEventImpl { clock, unit_no }, voice_no)),
         }
     }
 
     #[must_use]
     pub fn group_no(clock: u32, unit_no: u8, group_no: u8) -> Self {
         Self {
-            kind: EventKindImpl::VoiceNo(Box::new((BaseEventImpl { clock, unit_no }, group_no))),
+            kind: EventKindImpl::VoiceNo((BaseEventImpl { clock, unit_no }, group_no)),
         }
     }
 
     #[must_use]
     pub fn tuning(clock: u32, unit_no: u8, tuning: TuningValue) -> Self {
         Self {
-            kind: EventKindImpl::Tuning(Box::new((BaseEventImpl { clock, unit_no }, tuning))),
+            kind: EventKindImpl::Tuning((BaseEventImpl { clock, unit_no }, tuning)),
         }
     }
 
     #[must_use]
     pub fn pan_time(clock: u32, unit_no: u8, pan_time: PanValue) -> Self {
         Self {
-            kind: EventKindImpl::PanTime(Box::new((BaseEventImpl { clock, unit_no }, pan_time))),
+            kind: EventKindImpl::PanTime((BaseEventImpl { clock, unit_no }, pan_time)),
         }
     }
 
     fn base(&self) -> Option<&dyn BaseEvent> {
         #[allow(clippy::match_same_arms)]
         match &self.kind {
-            GenericEventKind::On(e) => Some(e.as_ref()),
-            GenericEventKind::Key(e) => Some(e.as_ref()),
-            GenericEventKind::PanVolume(e) => Some(e.as_ref()),
-            GenericEventKind::Velocity(e) => Some(e.as_ref()),
-            GenericEventKind::Volume(e) => Some(e.as_ref()),
-            GenericEventKind::Porta(e) => Some(e.as_ref()),
-            GenericEventKind::VoiceNo(e) => Some(e.as_ref()),
-            GenericEventKind::GroupNo(e) => Some(e.as_ref()),
-            GenericEventKind::Tuning(e) => Some(e.as_ref()),
-            GenericEventKind::PanTime(e) => Some(e.as_ref()),
+            GenericEventKind::On(e) => Some(e),
+            GenericEventKind::Key(e) => Some(e),
+            GenericEventKind::PanVolume(e) => Some(e),
+            GenericEventKind::Velocity(e) => Some(e),
+            GenericEventKind::Volume(e) => Some(e),
+            GenericEventKind::Porta(e) => Some(e),
+            GenericEventKind::VoiceNo(e) => Some(e),
+            GenericEventKind::GroupNo(e) => Some(e),
+            GenericEventKind::Tuning(e) => Some(e),
+            GenericEventKind::PanTime(e) => Some(e),
             _ => None,
         }
     }
@@ -153,16 +150,16 @@ impl EventImpl<'_> {
     fn base_mut(&mut self) -> Option<&mut dyn BaseEvent> {
         #[allow(clippy::match_same_arms)]
         match &mut self.kind {
-            GenericEventKind::On(e) => Some(e.as_mut()),
-            GenericEventKind::Key(e) => Some(e.as_mut()),
-            GenericEventKind::PanVolume(e) => Some(e.as_mut()),
-            GenericEventKind::Velocity(e) => Some(e.as_mut()),
-            GenericEventKind::Volume(e) => Some(e.as_mut()),
-            GenericEventKind::Porta(e) => Some(e.as_mut()),
-            GenericEventKind::VoiceNo(e) => Some(e.as_mut()),
-            GenericEventKind::GroupNo(e) => Some(e.as_mut()),
-            GenericEventKind::Tuning(e) => Some(e.as_mut()),
-            GenericEventKind::PanTime(e) => Some(e.as_mut()),
+            GenericEventKind::On(e) => Some(e),
+            GenericEventKind::Key(e) => Some(e),
+            GenericEventKind::PanVolume(e) => Some(e),
+            GenericEventKind::Velocity(e) => Some(e),
+            GenericEventKind::Volume(e) => Some(e),
+            GenericEventKind::Porta(e) => Some(e),
+            GenericEventKind::VoiceNo(e) => Some(e),
+            GenericEventKind::GroupNo(e) => Some(e),
+            GenericEventKind::Tuning(e) => Some(e),
+            GenericEventKind::PanTime(e) => Some(e),
             _ => None,
         }
     }
@@ -312,16 +309,16 @@ impl GenericEvent for EventImpl<'_> {
     fn kind(&self) -> GenericEventKindRef {
         match &self.kind {
             GenericEventKind::Invalid => GenericEventKind::Invalid,
-            GenericEventKind::On(e) => GenericEventKind::On(BoxOrRef::Ref(&**e)),
-            GenericEventKind::Key(e) => GenericEventKind::Key(BoxOrRef::Ref(&**e)),
-            GenericEventKind::PanVolume(e) => GenericEventKind::PanVolume(BoxOrRef::Ref(&**e)),
-            GenericEventKind::Velocity(e) => GenericEventKind::Velocity(BoxOrRef::Ref(&**e)),
-            GenericEventKind::Volume(e) => GenericEventKind::Volume(BoxOrRef::Ref(&**e)),
-            GenericEventKind::Porta(e) => GenericEventKind::Porta(BoxOrRef::Ref(&**e)),
-            GenericEventKind::VoiceNo(e) => GenericEventKind::VoiceNo(BoxOrRef::Ref(&**e)),
-            GenericEventKind::GroupNo(e) => GenericEventKind::GroupNo(BoxOrRef::Ref(&**e)),
-            GenericEventKind::Tuning(e) => GenericEventKind::Tuning(BoxOrRef::Ref(&**e)),
-            GenericEventKind::PanTime(e) => GenericEventKind::PanTime(BoxOrRef::Ref(&**e)),
+            GenericEventKind::On(e) => GenericEventKind::On(BoxOrRef::Ref(e)),
+            GenericEventKind::Key(e) => GenericEventKind::Key(BoxOrRef::Ref(e)),
+            GenericEventKind::PanVolume(e) => GenericEventKind::PanVolume(BoxOrRef::Ref(e)),
+            GenericEventKind::Velocity(e) => GenericEventKind::Velocity(BoxOrRef::Ref(e)),
+            GenericEventKind::Volume(e) => GenericEventKind::Volume(BoxOrRef::Ref(e)),
+            GenericEventKind::Porta(e) => GenericEventKind::Porta(BoxOrRef::Ref(e)),
+            GenericEventKind::VoiceNo(e) => GenericEventKind::VoiceNo(BoxOrRef::Ref(e)),
+            GenericEventKind::GroupNo(e) => GenericEventKind::GroupNo(BoxOrRef::Ref(e)),
+            GenericEventKind::Tuning(e) => GenericEventKind::Tuning(BoxOrRef::Ref(e)),
+            GenericEventKind::PanTime(e) => GenericEventKind::PanTime(BoxOrRef::Ref(e)),
             GenericEventKind::_Phantom(_, _) => unreachable!(),
         }
     }
@@ -329,16 +326,16 @@ impl GenericEvent for EventImpl<'_> {
     fn kind_mut(&mut self) -> GenericEventKindMut {
         match &mut self.kind {
             GenericEventKind::Invalid => GenericEventKind::Invalid,
-            GenericEventKind::On(e) => GenericEventKind::On(BoxOrMut::Ref(&mut **e)),
-            GenericEventKind::Key(e) => GenericEventKind::Key(BoxOrMut::Ref(&mut **e)),
-            GenericEventKind::PanVolume(e) => GenericEventKind::PanVolume(BoxOrMut::Ref(&mut **e)),
-            GenericEventKind::Velocity(e) => GenericEventKind::Velocity(BoxOrMut::Ref(&mut **e)),
-            GenericEventKind::Volume(e) => GenericEventKind::Volume(BoxOrMut::Ref(&mut **e)),
-            GenericEventKind::Porta(e) => GenericEventKind::Porta(BoxOrMut::Ref(&mut **e)),
-            GenericEventKind::VoiceNo(e) => GenericEventKind::VoiceNo(BoxOrMut::Ref(&mut **e)),
-            GenericEventKind::GroupNo(e) => GenericEventKind::GroupNo(BoxOrMut::Ref(&mut **e)),
-            GenericEventKind::Tuning(e) => GenericEventKind::Tuning(BoxOrMut::Ref(&mut **e)),
-            GenericEventKind::PanTime(e) => GenericEventKind::PanTime(BoxOrMut::Ref(&mut **e)),
+            GenericEventKind::On(e) => GenericEventKind::On(BoxOrMut::Ref(e)),
+            GenericEventKind::Key(e) => GenericEventKind::Key(BoxOrMut::Ref(e)),
+            GenericEventKind::PanVolume(e) => GenericEventKind::PanVolume(BoxOrMut::Ref(e)),
+            GenericEventKind::Velocity(e) => GenericEventKind::Velocity(BoxOrMut::Ref(e)),
+            GenericEventKind::Volume(e) => GenericEventKind::Volume(BoxOrMut::Ref(e)),
+            GenericEventKind::Porta(e) => GenericEventKind::Porta(BoxOrMut::Ref(e)),
+            GenericEventKind::VoiceNo(e) => GenericEventKind::VoiceNo(BoxOrMut::Ref(e)),
+            GenericEventKind::GroupNo(e) => GenericEventKind::GroupNo(BoxOrMut::Ref(e)),
+            GenericEventKind::Tuning(e) => GenericEventKind::Tuning(BoxOrMut::Ref(e)),
+            GenericEventKind::PanTime(e) => GenericEventKind::PanTime(BoxOrMut::Ref(e)),
             GenericEventKind::_Phantom(_, _) => unreachable!(),
         }
     }
