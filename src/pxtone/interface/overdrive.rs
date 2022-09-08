@@ -71,7 +71,11 @@ pub struct AddOverDriveError {
 
 impl fmt::Display for AddOverDriveError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Invalid Text")
+        write!(
+            f,
+            "Failed to add OverDrive(group={} cut={:?} amp={:?})",
+            self.group, self.cut, self.amp
+        )
     }
 }
 

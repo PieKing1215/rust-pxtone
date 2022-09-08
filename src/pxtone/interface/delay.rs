@@ -37,7 +37,11 @@ pub struct AddDelayError {
 
 impl fmt::Display for AddDelayError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Invalid Text")
+        write!(
+            f,
+            "Failed to add Delay(group={} frequency={:?} rate={:?})",
+            self.group, self.frequency, self.rate
+        )
     }
 }
 

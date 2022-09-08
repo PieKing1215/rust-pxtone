@@ -405,7 +405,7 @@ pub struct AddEventError {}
 
 impl fmt::Display for AddEventError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Invalid Text")
+        write!(f, "Failed to add Event")
     }
 }
 
