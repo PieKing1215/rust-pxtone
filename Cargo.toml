@@ -18,4 +18,4 @@ default = ["og-impl"]
 og-impl = ["dep:pxtone-sys"]
 
 [dev-dependencies]
-cpal = "0.13"
+cpal = "0.14"
