@@ -1,6 +1,9 @@
 use std::fmt;
 
+use crate::util::{BoxOrMut, BoxOrRef};
+
 use super::{
+    delay::{Delays, DelaysMut},
     event::{EventList, EventListMut},
     unit::{Unit, Units, UnitsMut},
     woice::{Woices, WoicesMut},
@@ -24,6 +27,8 @@ pub trait PxTone {
     type EventListMut: EventListMut + Sized;
     type Woices: Woices + Sized;
     type WoicesMut: WoicesMut + Sized;
+    type Delays: Delays + Sized;
+    type DelaysMut: DelaysMut + Sized;
 
     fn beat_num(&self) -> i32;
     fn set_beat_num(&mut self, beat_num: i32);
@@ -57,4 +62,7 @@ pub trait PxTone {
 
     fn woices(&self) -> Self::Woices;
     fn woices_mut(&mut self) -> Self::WoicesMut;
+
+    fn delays(&self) -> BoxOrRef<Self::Delays>;
+    fn delays_mut(&mut self) -> BoxOrMut<Self::DelaysMut>;
 }

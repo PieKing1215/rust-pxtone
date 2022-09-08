@@ -6,7 +6,7 @@ use std::{
     ops::Deref,
 };
 
-use crate::pxtone::util::{BoxOrMut, BoxOrRef};
+use crate::pxtone::util::{BoxOrMut, BoxOrRef, ZeroToOneF32};
 
 pub trait BaseEvent {
     fn clock(&self) -> u32;
@@ -257,34 +257,6 @@ impl Deref for PanValue {
 pub trait EventPanVolume: BaseEvent {
     fn pan_volume(&self) -> PanValue;
     fn set_pan_volume(&mut self, pan_volume: PanValue);
-}
-
-/// Wrapper for an f32 representing a value from 0.0 to 1.0 (inclusive).
-#[derive(Clone, Copy, Debug)]
-pub struct ZeroToOneF32(f32);
-
-impl ZeroToOneF32 {
-    /// Create a `ZeroToOneF32` from a normal f32.
-    ///
-    /// The value is clamped if outside 0.0..=1.0.
-    #[must_use]
-    pub fn new(value: f32) -> Self {
-        Self(value.clamp(0.0, 1.0))
-    }
-}
-
-impl Default for ZeroToOneF32 {
-    fn default() -> Self {
-        Self(104.0 / 128.0)
-    }
-}
-
-impl Deref for ZeroToOneF32 {
-    type Target = f32;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
 }
 
 pub trait EventVelocity: BaseEvent {

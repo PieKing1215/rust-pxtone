@@ -93,3 +93,25 @@ impl<'a, T: 'a + ?Sized> From<&'a mut T> for BoxOrMut<'a, T> {
         Self::Ref(v)
     }
 }
+
+/// Wrapper for an f32 representing a value from 0.0 to 1.0 (inclusive).
+#[derive(Clone, Copy, Debug)]
+pub struct ZeroToOneF32(f32);
+
+impl ZeroToOneF32 {
+    /// Create a `ZeroToOneF32` from a normal f32.
+    ///
+    /// The value is clamped if outside 0.0..=1.0.
+    #[must_use]
+    pub fn new(value: f32) -> Self {
+        Self(value.clamp(0.0, 1.0))
+    }
+}
+
+impl Deref for ZeroToOneF32 {
+    type Target = f32;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}

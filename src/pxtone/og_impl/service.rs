@@ -18,6 +18,7 @@ use crate::{
         unit::{Units, UnitsMut},
     },
     pxtone::util::BoxOrMut,
+    util::BoxOrRef,
 };
 
 use super::{error::Error, event::PxToneEventList, unit::PxToneUnit, woice::PxToneWoices};
@@ -26,7 +27,13 @@ pub struct PxToneService<'p> {
 }
 
 impl<'p> PxToneService<'p> {
-    pub fn raw(&mut self) -> &mut pxtnService {
+    #[must_use]
+    pub fn raw(&self) -> &pxtnService {
+        &self.service
+    }
+
+    #[must_use]
+    pub fn raw_mut(&mut self) -> &mut pxtnService {
         &mut self.service
     }
 
@@ -104,6 +111,8 @@ impl<'p> PxTone for PxToneService<'p> {
     type EventListMut = PxToneEventList<&'p mut pxtnEvelist>;
     type Woices = PxToneWoices<'p, &'p pxtnWoice>;
     type WoicesMut = PxToneWoices<'p, &'p mut pxtnWoice>;
+    type Delays = Self;
+    type DelaysMut = Self;
 
     fn beat_num(&self) -> i32 {
         unsafe { (*self.service.master)._beat_num }
@@ -285,6 +294,14 @@ impl<'p> PxTone for PxToneService<'p> {
         };
         let v = raw.iter().map(|r| unsafe { &mut **r }).collect::<Vec<_>>();
         PxToneWoices::new(v)
+    }
+
+    fn delays(&self) -> BoxOrRef<Self::Delays> {
+        self.into()
+    }
+
+    fn delays_mut(&mut self) -> BoxOrMut<Self::DelaysMut> {
+        self.into()
     }
 }
 

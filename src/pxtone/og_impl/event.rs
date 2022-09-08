@@ -10,9 +10,9 @@ use crate::{
         AddEventError, BaseEvent, EventGroupNo, EventKey, EventList, EventListMut, EventOn,
         EventPanTime, EventPanVolume, EventPorta, EventTuning, EventVelocity, EventVoiceNo,
         EventVolume, GenericEvent, GenericEventKind, GenericEventKindMut, GenericEventKindRef,
-        PanValue, TuningValue, ZeroToOneF32,
+        PanValue, TuningValue,
     },
-    pxtone::util::{BoxOrMut, BoxOrRef},
+    pxtone::util::{BoxOrMut, BoxOrRef, ZeroToOneF32},
 };
 
 // PxToneEventList implementation

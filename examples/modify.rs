@@ -2,6 +2,7 @@ use std::path::Path;
 
 use pxtone::{
     interface::{
+        delay::{Delay, DelayUnit, DelaysMut},
         event::{
             BaseEvent, EventListMut, EventPanVolume, GenericEvent, GenericEventKind, PanValue,
         },
@@ -14,6 +15,7 @@ use pxtone::{
         },
     },
     og_impl::service::PxToneService,
+    util::ZeroToOneF32,
 };
 
 fn main() {
@@ -136,6 +138,23 @@ fn do_stuff<PXTN: PxTone + PxToneServiceIO>(bytes: &[u8]) -> Result<(), PXTN::Er
                 e.set_pan_volume(PanValue::new(-*e.pan_volume()));
             },
             _ => {},
+        }
+    }
+
+    // add a couple delay effects
+    pxtone
+        .delays_mut()
+        .add(0, DelayUnit::Second(4.0), ZeroToOneF32::new(0.25))
+        .unwrap();
+    pxtone
+        .delays_mut()
+        .add(3, DelayUnit::Beat(2.0), ZeroToOneF32::new(0.5))
+        .unwrap();
+
+    // edit delay effects
+    for mut delay in pxtone.delays_mut().iter_mut() {
+        if delay.group() == 3 {
+            delay.set_frequency(DelayUnit::Measure(4.0));
         }
     }
 

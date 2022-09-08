@@ -1,3 +1,4 @@
+pub mod delay;
 pub mod event;
 pub mod event_impl;
 pub mod io;

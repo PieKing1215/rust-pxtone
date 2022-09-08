@@ -1,11 +1,11 @@
 //! Basic `GenericEventKind` and `GenericEvent` implementations
 
-use crate::pxtone::util::{BoxOrMut, BoxOrRef};
+use crate::pxtone::util::{BoxOrMut, BoxOrRef, ZeroToOneF32};
 
 use super::event::{
     BaseEvent, EventGroupNo, EventKey, EventOn, EventPanTime, EventPanVolume, EventPorta,
     EventTuning, EventVelocity, EventVoiceNo, EventVolume, GenericEvent, GenericEventKind,
-    GenericEventKindMut, GenericEventKindRef, PanValue, TuningValue, ZeroToOneF32,
+    GenericEventKindMut, GenericEventKindRef, PanValue, TuningValue,
 };
 
 pub type EventKindImpl<'a> = GenericEventKind<
