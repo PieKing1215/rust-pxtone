@@ -11,9 +11,13 @@ categories = ["multimedia::audio", "parser-implementations"]
 edition = "2021"
 
 [dependencies]
-pxtone-sys = "0.1.2"
+pxtone-sys = { version = "0.1.2", optional = true }
 num-traits = "0.2"
 num-derive = "0.3"
+
+[features]
+default = ["og-impl"]
+og-impl = ["dep:pxtone-sys"]
 
 [dev-dependencies]
 cpal = "0.13"

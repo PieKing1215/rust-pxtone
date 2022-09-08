@@ -1,3 +1,5 @@
 pub mod interface;
-pub mod og_impl;
 pub mod util;
+
+#[cfg(feature = "og-impl")]
+pub mod og_impl;
