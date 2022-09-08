@@ -414,6 +414,5 @@ impl std::error::Error for AddEventError {}
 pub trait EventListMut: EventList {
     fn iter_mut(&mut self) -> Box<dyn Iterator<Item = &mut Self::Event>>;
 
-    // TODO: make this an enum or something so you can't input invalid data
     fn add<E: GenericEvent>(&mut self, event: &E) -> Result<(), AddEventError>;
 }
