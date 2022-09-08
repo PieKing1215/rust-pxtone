@@ -7,6 +7,7 @@ use pxtone::{
             BaseEvent, EventListMut, EventPanVolume, GenericEvent, GenericEventKind, PanValue,
         },
         io::PxToneServiceIO,
+        overdrive::{OverDAmp, OverDCut, OverDrivesMut},
         service::PxTone,
         unit::Unit,
         woice::{
@@ -157,6 +158,12 @@ fn do_stuff<PXTN: PxTone + PxToneServiceIO>(bytes: &[u8]) -> Result<(), PXTN::Er
             delay.set_frequency(DelayUnit::Measure(4.0));
         }
     }
+
+    // add an overdrive effect
+    pxtone
+        .overdrives_mut()
+        .add(1, OverDCut::new(0.9), OverDAmp::new(2.0))
+        .unwrap();
 
     // write file
     pxtone.write_file(Path::new("out.ptcop"))?;

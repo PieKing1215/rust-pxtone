@@ -5,6 +5,7 @@ use crate::util::{BoxOrMut, BoxOrRef};
 use super::{
     delay::{Delays, DelaysMut},
     event::{EventList, EventListMut},
+    overdrive::{OverDrives, OverDrivesMut},
     unit::{Unit, Units, UnitsMut},
     woice::{Woices, WoicesMut},
 };
@@ -29,6 +30,8 @@ pub trait PxTone {
     type WoicesMut: WoicesMut + Sized;
     type Delays: Delays + Sized;
     type DelaysMut: DelaysMut + Sized;
+    type OverDrives: OverDrives + Sized;
+    type OverDrivesMut: OverDrivesMut + Sized;
 
     fn beat_num(&self) -> i32;
     fn set_beat_num(&mut self, beat_num: i32);
@@ -65,4 +68,7 @@ pub trait PxTone {
 
     fn delays(&self) -> BoxOrRef<Self::Delays>;
     fn delays_mut(&mut self) -> BoxOrMut<Self::DelaysMut>;
+
+    fn overdrives(&self) -> BoxOrRef<Self::OverDrives>;
+    fn overdrives_mut(&mut self) -> BoxOrMut<Self::OverDrivesMut>;
 }

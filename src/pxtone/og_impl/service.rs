@@ -113,6 +113,8 @@ impl<'p> PxTone for PxToneService<'p> {
     type WoicesMut = PxToneWoices<'p, &'p mut pxtnWoice>;
     type Delays = Self;
     type DelaysMut = Self;
+    type OverDrives = Self;
+    type OverDrivesMut = Self;
 
     fn beat_num(&self) -> i32 {
         unsafe { (*self.service.master)._beat_num }
@@ -301,6 +303,14 @@ impl<'p> PxTone for PxToneService<'p> {
     }
 
     fn delays_mut(&mut self) -> BoxOrMut<Self::DelaysMut> {
+        self.into()
+    }
+
+    fn overdrives(&self) -> BoxOrRef<Self::OverDrives> {
+        self.into()
+    }
+
+    fn overdrives_mut(&mut self) -> BoxOrMut<Self::OverDrivesMut> {
         self.into()
     }
 }
