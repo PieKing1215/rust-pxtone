@@ -1,6 +1,6 @@
 use crate::util::{BoxOrMut, BoxOrRef};
 
-use super::service::InvalidText;
+use super::service::{InvalidText, PxTone};
 
 pub trait Unit {
     fn selected(&self) -> bool;
@@ -21,4 +21,12 @@ pub trait Units {
 
 pub trait UnitsMut: Units {
     fn iter_mut<'a>(&'a mut self) -> Box<dyn Iterator<Item = BoxOrMut<Self::U>> + 'a>;
+}
+
+pub trait HasUnits: PxTone {
+    type Units: Units + Sized;
+    type UnitsMut: UnitsMut + Sized;
+
+    fn units(&self) -> BoxOrRef<Self::Units>;
+    fn units_mut(&mut self) -> BoxOrMut<Self::UnitsMut>;
 }

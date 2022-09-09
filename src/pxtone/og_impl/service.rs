@@ -6,7 +6,7 @@ use std::{
     slice,
 };
 
-use pxtone_sys::{fclose, fopen, pxtnDescriptor, pxtnEvelist, pxtnService, pxtnVOMITPREPARATION};
+use pxtone_sys::{fclose, fopen, pxtnDescriptor, pxtnService, pxtnVOMITPREPARATION};
 
 use crate::{
     interface::{
@@ -14,11 +14,10 @@ use crate::{
         moo::{Fade, Moo},
         service::{InvalidText, PxTone},
     },
-    pxtone::util::BoxOrMut,
-    util::BoxOrRef,
+    og_impl::error::Error,
+    util::BoxOrMut,
 };
 
-use super::{error::Error, event::PxToneEventList};
 pub struct PxToneService<'p> {
     service: BoxOrMut<'p, pxtnService>,
 }
@@ -103,17 +102,6 @@ impl<'p> PxToneServiceIO for PxToneService<'p> {
 }
 
 impl<'p> PxTone for PxToneService<'p> {
-    type Units = Self;
-    type UnitsMut = Self;
-    type EventList = PxToneEventList<&'p pxtnEvelist>;
-    type EventListMut = PxToneEventList<&'p mut pxtnEvelist>;
-    type Woices = Self;
-    type WoicesMut = Self;
-    type Delays = Self;
-    type DelaysMut = Self;
-    type OverDrives = Self;
-    type OverDrivesMut = Self;
-
     fn beat_num(&self) -> i32 {
         unsafe { (*self.service.master)._beat_num }
     }
@@ -236,46 +224,6 @@ impl<'p> PxTone for PxToneService<'p> {
                 Err(InvalidText)
             }
         }
-    }
-
-    fn units(&self) -> BoxOrRef<Self::Units> {
-        self.into()
-    }
-
-    fn units_mut(&mut self) -> BoxOrMut<Self::UnitsMut> {
-        self.into()
-    }
-
-    fn event_list(&self) -> BoxOrRef<Self::EventList> {
-        PxToneEventList::new(unsafe { &*self.service.evels }).into()
-    }
-
-    fn event_list_mut(&mut self) -> BoxOrMut<Self::EventListMut> {
-        PxToneEventList::new(unsafe { &mut *self.service.evels }).into()
-    }
-
-    fn woices(&self) -> BoxOrRef<Self::Woices> {
-        self.into()
-    }
-
-    fn woices_mut(&mut self) -> BoxOrMut<Self::WoicesMut> {
-        self.into()
-    }
-
-    fn delays(&self) -> BoxOrRef<Self::Delays> {
-        self.into()
-    }
-
-    fn delays_mut(&mut self) -> BoxOrMut<Self::DelaysMut> {
-        self.into()
-    }
-
-    fn overdrives(&self) -> BoxOrRef<Self::OverDrives> {
-        self.into()
-    }
-
-    fn overdrives_mut(&mut self) -> BoxOrMut<Self::OverDrivesMut> {
-        self.into()
     }
 }
 

@@ -7,7 +7,7 @@ use pxtone_sys::pxtnOverDrive;
 
 use crate::{
     interface::overdrive::{
-        AddOverDriveError, OverDAmp, OverDCut, OverDrive, OverDrives, OverDrivesMut,
+        AddOverDriveError, HasOverDrives, OverDAmp, OverDCut, OverDrive, OverDrives, OverDrivesMut,
     },
     util::{BoxOrMut, BoxOrRef},
 };
@@ -87,5 +87,18 @@ impl<'b, P: BorrowMut<PxToneService<'b>>> OverDrivesMut for P {
 
     fn remove(&mut self, index: usize) -> bool {
         unsafe { self.borrow_mut().raw_mut().OverDrive_Remove(index as _) }
+    }
+}
+
+impl HasOverDrives for PxToneService<'_> {
+    type OverDrives = Self;
+    type OverDrivesMut = Self;
+
+    fn overdrives(&self) -> BoxOrRef<Self::OverDrives> {
+        self.into()
+    }
+
+    fn overdrives_mut(&mut self) -> BoxOrMut<Self::OverDrivesMut> {
+        self.into()
     }
 }

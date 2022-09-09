@@ -6,7 +6,7 @@ use std::{
 use pxtone_sys::pxtnDelay;
 
 use crate::{
-    interface::delay::{AddDelayError, Delay, DelayUnit, Delays, DelaysMut},
+    interface::delay::{AddDelayError, Delay, DelayUnit, Delays, DelaysMut, HasDelays},
     pxtone::util::ZeroToOneF32,
     util::{BoxOrMut, BoxOrRef},
 };
@@ -114,5 +114,18 @@ impl<'b, P: BorrowMut<PxToneService<'b>>> DelaysMut for P {
 
     fn remove(&mut self, index: usize) -> bool {
         unsafe { self.borrow_mut().raw_mut().Delay_Remove(index as _) }
+    }
+}
+
+impl HasDelays for PxToneService<'_> {
+    type Delays = Self;
+    type DelaysMut = Self;
+
+    fn delays(&self) -> BoxOrRef<Self::Delays> {
+        self.into()
+    }
+
+    fn delays_mut(&mut self) -> BoxOrMut<Self::DelaysMut> {
+        self.into()
     }
 }

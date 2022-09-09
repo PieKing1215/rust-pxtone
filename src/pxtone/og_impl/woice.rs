@@ -9,7 +9,7 @@ use crate::{
     interface::{
         service::InvalidText,
         woice::{
-            PTNEnvelopePoint, PTNOscillator, PTNUnit, PTNWaveType, PTVCoordinateWave,
+            HasWoices, PTNEnvelopePoint, PTNOscillator, PTNUnit, PTNWaveType, PTVCoordinateWave,
             PTVCoordinateWavePoint, PTVOvertoneWave, PTVOvertoneWaveTone, PTVWaveType, SingleVoice,
             Voice, VoiceOGGV, VoicePCM, VoicePTN, VoicePTV, Woice, WoiceOGGV, WoicePCM, WoicePTN,
             WoicePTV, WoiceType, WoiceTypeMut, WoiceTypeRef, Woices, WoicesMut,
@@ -400,5 +400,18 @@ impl WoicesMut for PxToneService<'_> {
                 .iter_mut()
                 .map(|w| BoxOrMut::Ref(unsafe { &mut **w } as &mut Self::W)),
         )
+    }
+}
+
+impl HasWoices for PxToneService<'_> {
+    type Woices = Self;
+    type WoicesMut = Self;
+
+    fn woices(&self) -> BoxOrRef<Self::Woices> {
+        self.into()
+    }
+
+    fn woices_mut(&mut self) -> BoxOrMut<Self::WoicesMut> {
+        self.into()
     }
 }

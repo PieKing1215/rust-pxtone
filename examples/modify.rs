@@ -2,17 +2,19 @@ use std::path::Path;
 
 use pxtone::{
     interface::{
-        delay::{Delay, DelayUnit, DelaysMut},
+        delay::{Delay, DelayUnit, DelaysMut, HasDelays},
         event::{
-            BaseEvent, EventListMut, EventPanVolume, GenericEvent, GenericEventKind, PanValue,
+            BaseEvent, EventListMut, EventPanVolume, GenericEvent, GenericEventKind, HasEventList,
+            PanValue,
         },
         io::PxToneServiceIO,
-        overdrive::{OverDAmp, OverDCut, OverDrivesMut},
+        overdrive::{HasOverDrives, OverDAmp, OverDCut, OverDrivesMut},
         service::PxTone,
-        unit::{Unit, UnitsMut},
+        unit::{HasUnits, Unit, UnitsMut},
         woice::{
-            PTNOscillator, PTNUnit, PTVCoordinateWave, PTVOvertoneWave, PTVWaveType, SingleVoice,
-            VoiceOGGV, VoicePCM, VoicePTN, VoicePTV, Woice, WoicePTV, WoiceType, WoicesMut,
+            HasWoices, PTNOscillator, PTNUnit, PTVCoordinateWave, PTVOvertoneWave, PTVWaveType,
+            SingleVoice, VoiceOGGV, VoicePCM, VoicePTN, VoicePTV, Woice, WoicePTV, WoiceType,
+            WoicesMut,
         },
     },
     og_impl::service::PxToneService,
@@ -27,7 +29,11 @@ fn main() {
 }
 
 // This stuff is in a separate function just to demonstrate how everything is trait based
-fn do_stuff<PXTN: PxTone + PxToneServiceIO>(bytes: &[u8]) -> Result<(), PXTN::Error> {
+fn do_stuff<
+    PXTN: PxTone + PxToneServiceIO + HasUnits + HasWoices + HasEventList + HasDelays + HasOverDrives,
+>(
+    bytes: &[u8],
+) -> Result<(), PXTN::Error> {
     let mut pxtone = PXTN::read_bytes(bytes).expect("read_bytes failed");
 
     println!("Editing \"{}\"", pxtone.name());

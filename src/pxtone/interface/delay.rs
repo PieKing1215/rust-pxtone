@@ -5,6 +5,8 @@ use crate::{
     util::{BoxOrMut, BoxOrRef},
 };
 
+use super::service::PxTone;
+
 #[derive(Clone, Copy, Debug)]
 pub enum DelayUnit {
     Beat(f32),
@@ -58,4 +60,12 @@ pub trait DelaysMut: Delays {
     ) -> Result<(), AddDelayError>;
 
     fn remove(&mut self, index: usize) -> bool;
+}
+
+pub trait HasDelays: PxTone {
+    type Delays: Delays + Sized;
+    type DelaysMut: DelaysMut + Sized;
+
+    fn delays(&self) -> BoxOrRef<Self::Delays>;
+    fn delays_mut(&mut self) -> BoxOrMut<Self::DelaysMut>;
 }

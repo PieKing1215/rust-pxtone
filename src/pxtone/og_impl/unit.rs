@@ -5,7 +5,7 @@ use pxtone_sys::pxtnUnit;
 use crate::{
     interface::{
         service::InvalidText,
-        unit::{Unit, Units, UnitsMut},
+        unit::{HasUnits, Unit, Units, UnitsMut},
     },
     util::{BoxOrMut, BoxOrRef},
 };
@@ -96,5 +96,18 @@ impl UnitsMut for PxToneService<'_> {
                 .iter_mut()
                 .map(|u| BoxOrMut::Ref(unsafe { &mut **u } as &mut Self::U)),
         )
+    }
+}
+
+impl HasUnits for PxToneService<'_> {
+    type Units = Self;
+    type UnitsMut = Self;
+
+    fn units(&self) -> BoxOrRef<Self::Units> {
+        self.into()
+    }
+
+    fn units_mut(&mut self) -> BoxOrMut<Self::UnitsMut> {
+        self.into()
     }
 }

@@ -10,10 +10,12 @@ use crate::{
         AddEventError, BaseEvent, EventGroupNo, EventKey, EventList, EventListMut, EventOn,
         EventPanTime, EventPanVolume, EventPorta, EventTuning, EventVelocity, EventVoiceNo,
         EventVolume, GenericEvent, GenericEventKind, GenericEventKindMut, GenericEventKindRef,
-        PanValue, TuningValue,
+        HasEventList, PanValue, TuningValue,
     },
     pxtone::util::{BoxOrMut, BoxOrRef, ZeroToOneF32},
 };
+
+use super::service::PxToneService;
 
 // PxToneEventList implementation
 
@@ -391,5 +393,18 @@ impl<T: Borrow<pxtnEvelist>> EventList for PxToneEventList<T> {
             .into_iter()
             .map(|e| e as &'static EVERECORD),
         )
+    }
+}
+
+impl<'p> HasEventList for PxToneService<'p> {
+    type EventList = PxToneEventList<&'p pxtnEvelist>;
+    type EventListMut = PxToneEventList<&'p mut pxtnEvelist>;
+
+    fn event_list(&self) -> BoxOrRef<Self::EventList> {
+        PxToneEventList::new(unsafe { &*self.raw().evels }).into()
+    }
+
+    fn event_list_mut(&mut self) -> BoxOrMut<Self::EventListMut> {
+        PxToneEventList::new(unsafe { &mut *self.raw_mut().evels }).into()
     }
 }
