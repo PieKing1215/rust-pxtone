@@ -6,22 +6,19 @@ use std::{
     slice,
 };
 
-use pxtone_sys::{
-    fclose, fopen, pxtnDescriptor, pxtnEvelist, pxtnService, pxtnVOMITPREPARATION, pxtnWoice,
-};
+use pxtone_sys::{fclose, fopen, pxtnDescriptor, pxtnEvelist, pxtnService, pxtnVOMITPREPARATION};
 
 use crate::{
     interface::{
         io::PxToneServiceIO,
         moo::{Fade, Moo},
         service::{InvalidText, PxTone},
-        unit::{Units, UnitsMut},
     },
     pxtone::util::BoxOrMut,
     util::BoxOrRef,
 };
 
-use super::{error::Error, event::PxToneEventList, unit::PxToneUnit, woice::PxToneWoices};
+use super::{error::Error, event::PxToneEventList};
 pub struct PxToneService<'p> {
     service: BoxOrMut<'p, pxtnService>,
 }
@@ -106,11 +103,12 @@ impl<'p> PxToneServiceIO for PxToneService<'p> {
 }
 
 impl<'p> PxTone for PxToneService<'p> {
-    type Unit = PxToneUnit;
+    type Units = Self;
+    type UnitsMut = Self;
     type EventList = PxToneEventList<&'p pxtnEvelist>;
     type EventListMut = PxToneEventList<&'p mut pxtnEvelist>;
-    type Woices = PxToneWoices<'p, &'p pxtnWoice>;
-    type WoicesMut = PxToneWoices<'p, &'p mut pxtnWoice>;
+    type Woices = Self;
+    type WoicesMut = Self;
     type Delays = Self;
     type DelaysMut = Self;
     type OverDrives = Self;
@@ -240,62 +238,28 @@ impl<'p> PxTone for PxToneService<'p> {
         }
     }
 
-    fn units(&self) -> Units<Self::Unit> {
-        let raw = unsafe {
-            slice::from_raw_parts(
-                self.service._units,
-                self.service._unit_num.try_into().unwrap(),
-            )
-        };
-        let v = raw
-            .iter()
-            .map(|r| PxToneUnit::new(unsafe { &mut **r }))
-            .collect::<Vec<_>>();
-        Units::new(self, v)
+    fn units(&self) -> BoxOrRef<Self::Units> {
+        self.into()
     }
 
-    fn units_mut(&mut self) -> UnitsMut<Self::Unit> {
-        let raw = unsafe {
-            slice::from_raw_parts(
-                self.service._units,
-                self.service._unit_num.try_into().unwrap(),
-            )
-        };
-        let v = raw
-            .iter()
-            .map(|r| PxToneUnit::new(unsafe { &mut **r }))
-            .collect::<Vec<_>>();
-        UnitsMut::new(self, v)
+    fn units_mut(&mut self) -> BoxOrMut<Self::UnitsMut> {
+        self.into()
     }
 
-    fn event_list(&self) -> Self::EventList {
-        PxToneEventList::new(unsafe { &*self.service.evels })
+    fn event_list(&self) -> BoxOrRef<Self::EventList> {
+        PxToneEventList::new(unsafe { &*self.service.evels }).into()
     }
 
-    fn event_list_mut(&mut self) -> Self::EventListMut {
-        PxToneEventList::new(unsafe { &mut *self.service.evels })
+    fn event_list_mut(&mut self) -> BoxOrMut<Self::EventListMut> {
+        PxToneEventList::new(unsafe { &mut *self.service.evels }).into()
     }
 
-    fn woices(&self) -> Self::Woices {
-        let raw = unsafe {
-            slice::from_raw_parts(
-                self.service._woices,
-                self.service._woice_num.try_into().unwrap(),
-            )
-        };
-        let v = raw.iter().map(|r| unsafe { &**r }).collect::<Vec<_>>();
-        PxToneWoices::new(v)
+    fn woices(&self) -> BoxOrRef<Self::Woices> {
+        self.into()
     }
 
-    fn woices_mut(&mut self) -> Self::WoicesMut {
-        let raw = unsafe {
-            slice::from_raw_parts_mut(
-                self.service._woices,
-                self.service._woice_num.try_into().unwrap(),
-            )
-        };
-        let v = raw.iter().map(|r| unsafe { &mut **r }).collect::<Vec<_>>();
-        PxToneWoices::new(v)
+    fn woices_mut(&mut self) -> BoxOrMut<Self::WoicesMut> {
+        self.into()
     }
 
     fn delays(&self) -> BoxOrRef<Self::Delays> {

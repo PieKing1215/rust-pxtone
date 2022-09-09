@@ -6,7 +6,7 @@ use super::{
     delay::{Delays, DelaysMut},
     event::{EventList, EventListMut},
     overdrive::{OverDrives, OverDrivesMut},
-    unit::{Unit, Units, UnitsMut},
+    unit::{Units, UnitsMut},
     woice::{Woices, WoicesMut},
 };
 
@@ -23,7 +23,8 @@ impl std::error::Error for InvalidText {}
 
 /// Base trait for the overall state of pxtone
 pub trait PxTone {
-    type Unit: Unit + Sized;
+    type Units: Units + Sized;
+    type UnitsMut: UnitsMut + Sized;
     type EventList: EventList + Sized;
     type EventListMut: EventListMut + Sized;
     type Woices: Woices + Sized;
@@ -57,14 +58,14 @@ pub trait PxTone {
     fn comment(&self) -> String;
     fn set_comment(&mut self, comment: String) -> Result<(), InvalidText>;
 
-    fn units(&self) -> Units<Self::Unit>;
-    fn units_mut(&mut self) -> UnitsMut<Self::Unit>;
+    fn units(&self) -> BoxOrRef<Self::Units>;
+    fn units_mut(&mut self) -> BoxOrMut<Self::UnitsMut>;
 
-    fn event_list(&self) -> Self::EventList;
-    fn event_list_mut(&mut self) -> Self::EventListMut;
+    fn event_list(&self) -> BoxOrRef<Self::EventList>;
+    fn event_list_mut(&mut self) -> BoxOrMut<Self::EventListMut>;
 
-    fn woices(&self) -> Self::Woices;
-    fn woices_mut(&mut self) -> Self::WoicesMut;
+    fn woices(&self) -> BoxOrRef<Self::Woices>;
+    fn woices_mut(&mut self) -> BoxOrMut<Self::WoicesMut>;
 
     fn delays(&self) -> BoxOrRef<Self::Delays>;
     fn delays_mut(&mut self) -> BoxOrMut<Self::DelaysMut>;

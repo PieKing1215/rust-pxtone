@@ -1,9 +1,6 @@
-use std::{
-    marker::PhantomData,
-    ops::{Deref, DerefMut},
-};
+use crate::util::{BoxOrMut, BoxOrRef};
 
-use super::service::{InvalidText, PxTone};
+use super::service::InvalidText;
 
 pub trait Unit {
     fn selected(&self) -> bool;
@@ -16,46 +13,12 @@ pub trait Unit {
     fn set_name(&mut self, name: String) -> Result<(), InvalidText>;
 }
 
-pub struct Units<'a, U: Unit> {
-    _phantom: PhantomData<&'a ()>,
-    v: Vec<U>,
+pub trait Units {
+    type U: Unit;
+
+    fn iter<'a>(&'a self) -> Box<dyn Iterator<Item = BoxOrRef<Self::U>> + 'a>;
 }
 
-impl<'a, U: Unit> Units<'a, U> {
-    pub fn new<P: PxTone>(_pxtn: &'a P, v: Vec<U>) -> Self {
-        Self { _phantom: PhantomData, v }
-    }
-}
-
-impl<'a, U: Unit> Deref for Units<'a, U> {
-    type Target = [U];
-
-    fn deref(&self) -> &Self::Target {
-        &self.v
-    }
-}
-
-pub struct UnitsMut<'a, U: Unit> {
-    _phantom: PhantomData<&'a ()>,
-    v: Vec<U>,
-}
-
-impl<'a, U: Unit> UnitsMut<'a, U> {
-    pub fn new<P: PxTone>(_pxtn: &'a mut P, v: Vec<U>) -> Self {
-        Self { _phantom: PhantomData, v }
-    }
-}
-
-impl<'a, U: Unit> Deref for UnitsMut<'a, U> {
-    type Target = [U];
-
-    fn deref(&self) -> &Self::Target {
-        &self.v
-    }
-}
-
-impl<'a, U: Unit> DerefMut for UnitsMut<'a, U> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.v
-    }
+pub trait UnitsMut: Units {
+    fn iter_mut<'a>(&'a mut self) -> Box<dyn Iterator<Item = BoxOrMut<Self::U>> + 'a>;
 }

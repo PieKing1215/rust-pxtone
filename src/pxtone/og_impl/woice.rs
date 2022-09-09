@@ -1,9 +1,4 @@
-use std::{
-    borrow::{Borrow, BorrowMut},
-    ffi::CString,
-    marker::PhantomData,
-    slice,
-};
+use std::{ffi::CString, slice};
 
 use pxtone_sys::{
     pxNOISEDESIGN_OSCILLATOR, pxNOISEDESIGN_UNIT, pxtnPOINT, pxtnVOICEUNIT, pxtnVOICEWAVE,
@@ -22,6 +17,8 @@ use crate::{
     },
     pxtone::util::{BoxOrMut, BoxOrRef},
 };
+
+use super::service::PxToneService;
 
 impl Woice for pxtnWoice {
     type VPCM = pxtnVOICEUNIT;
@@ -379,36 +376,29 @@ impl WoicePTN<pxtnVOICEUNIT> for pxtnWoice {}
 
 impl WoiceOGGV<pxtnVOICEUNIT> for pxtnWoice {}
 
-pub struct PxToneWoices<'p, T: Borrow<pxtnWoice>> {
-    _phantom: PhantomData<&'p ()>,
-    woices: Vec<T>,
-}
-
-impl<'p, T: Borrow<pxtnWoice>> PxToneWoices<'p, T> {
-    #[must_use]
-    pub fn new(woices: Vec<T>) -> Self {
-        Self { _phantom: PhantomData, woices }
-    }
-}
-
-impl<'p, T: Borrow<pxtnWoice>> Woices for PxToneWoices<'p, T> {
+impl Woices for PxToneService<'_> {
     type W = pxtnWoice;
 
     fn iter<'a>(&'a self) -> Box<dyn Iterator<Item = BoxOrRef<Self::W>> + 'a> {
-        let v = (&self.woices).iter().map(|a| {
-            let b: &'a pxtnWoice = a.borrow();
-            BoxOrRef::Ref(b)
-        });
-        Box::new(v)
+        let slice =
+            unsafe { slice::from_raw_parts(self.raw()._woices, self.raw()._woice_num as usize) };
+        Box::new(
+            slice
+                .iter()
+                .map(|w| BoxOrRef::Ref(unsafe { &**w } as &Self::W)),
+        )
     }
 }
 
-impl<'p, T: BorrowMut<pxtnWoice>> WoicesMut for PxToneWoices<'p, T> {
+impl WoicesMut for PxToneService<'_> {
     fn iter_mut<'a>(&'a mut self) -> Box<dyn Iterator<Item = BoxOrMut<Self::W>> + 'a> {
-        let v = (&mut self.woices).iter_mut().map(|a| {
-            let b: &'a mut pxtnWoice = a.borrow_mut();
-            BoxOrMut::Ref(b)
-        });
-        Box::new(v)
+        let slice = unsafe {
+            slice::from_raw_parts_mut(self.raw_mut()._woices, self.raw_mut()._woice_num as usize)
+        };
+        Box::new(
+            slice
+                .iter_mut()
+                .map(|w| BoxOrMut::Ref(unsafe { &mut **w } as &mut Self::W)),
+        )
     }
 }

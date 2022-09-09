@@ -9,7 +9,7 @@ use pxtone::{
         io::PxToneServiceIO,
         overdrive::{OverDAmp, OverDCut, OverDrivesMut},
         service::PxTone,
-        unit::Unit,
+        unit::{Unit, UnitsMut},
         woice::{
             PTNOscillator, PTNUnit, PTVCoordinateWave, PTVOvertoneWave, PTVWaveType, SingleVoice,
             VoiceOGGV, VoicePCM, VoicePTN, VoicePTV, Woice, WoicePTV, WoiceType, WoicesMut,
@@ -42,7 +42,11 @@ fn do_stuff<PXTN: PxTone + PxToneServiceIO>(bytes: &[u8]) -> Result<(), PXTN::Er
     pxtone.set_beat_tempo(pxtone.beat_tempo() as f32 * 0.75);
 
     // rename the first unit
-    pxtone.units_mut()[0]
+    pxtone
+        .units_mut()
+        .iter_mut()
+        .next()
+        .unwrap()
         .set_name("supreme unit".into())
         .unwrap();
 
