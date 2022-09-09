@@ -188,7 +188,7 @@ pub trait VoicePTV: Voice {
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(dead_code)]
 pub enum PTNWaveType {
     None,

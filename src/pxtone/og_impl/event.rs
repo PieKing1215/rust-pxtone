@@ -98,7 +98,7 @@ impl<M, T: MaybeNext<Map = M>> IntoIterator for EventLinkedList<T> {
 }
 
 #[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[allow(dead_code)]
 pub enum EventKind {
     Null,
