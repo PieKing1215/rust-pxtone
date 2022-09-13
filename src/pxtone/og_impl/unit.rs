@@ -97,6 +97,33 @@ impl UnitsMut for PxToneService<'_> {
                 .map(|u| BoxOrMut::Ref(unsafe { &mut **u } as &mut Self::U)),
         )
     }
+
+    fn add_new(&mut self) -> Option<BoxOrMut<Self::U>> {
+        unsafe {
+            if self.raw_mut().Unit_AddNew() {
+                let slice = slice::from_raw_parts_mut(
+                    self.raw_mut()._units,
+                    self.raw_mut()._unit_num as usize,
+                );
+                Some(BoxOrMut::Ref(
+                    &mut *slice[(self.raw()._unit_num - 1) as usize],
+                ))
+            } else {
+                None
+            }
+        }
+    }
+
+    fn remove(&mut self, index: usize) -> bool {
+        unsafe {
+            let removed = self.raw_mut().Unit_Remove(index as _);
+            if removed {
+                (&mut *self.raw_mut().evels).Record_UnitNo_Miss(index as _);
+            }
+
+            removed
+        }
+    }
 }
 
 impl HasUnits for PxToneService<'_> {

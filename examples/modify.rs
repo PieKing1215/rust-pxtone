@@ -48,13 +48,20 @@ fn do_stuff<
     pxtone.set_beat_tempo(pxtone.beat_tempo() as f32 * 0.75);
 
     // rename the first unit
-    pxtone
-        .units_mut()
+    let mut units = pxtone.units_mut();
+    units
         .iter_mut()
         .next()
         .unwrap()
-        .set_name("supreme unit".into())
+        .set_name("the best unit".into())
         .unwrap();
+
+    // add a new unit
+    let mut new_unit = units.add_new().unwrap();
+    new_unit.set_name("new unit".into()).unwrap();
+
+    // remove a unit
+    units.remove(1);
 
     // iterate through woices and print out a bunch of details
     for (i, mut woice) in pxtone.woices_mut().iter_mut().enumerate() {

@@ -21,6 +21,8 @@ pub trait Units {
 
 pub trait UnitsMut: Units {
     fn iter_mut<'a>(&'a mut self) -> Box<dyn Iterator<Item = BoxOrMut<Self::U>> + 'a>;
+    fn add_new(&mut self) -> Option<BoxOrMut<Self::U>>;
+    fn remove(&mut self, index: usize) -> bool;
 }
 
 pub trait HasUnits {
