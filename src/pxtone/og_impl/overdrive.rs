@@ -73,13 +73,24 @@ impl<'b, P: BorrowMut<PxToneService<'b>>> OverDrivesMut for P {
         Box::new(v)
     }
 
-    fn add(&mut self, group: u8, cut: OverDCut, amp: OverDAmp) -> Result<(), AddOverDriveError> {
+    fn add(
+        &mut self,
+        group: u8,
+        cut: OverDCut,
+        amp: OverDAmp,
+    ) -> Result<BoxOrMut<Self::O>, AddOverDriveError> {
         if unsafe {
             self.borrow_mut()
                 .raw_mut()
                 .OverDrive_Add(*cut * 100.0, *amp, group as _)
         } {
-            Ok(())
+            let raw = unsafe {
+                slice::from_raw_parts_mut(
+                    self.borrow_mut().raw_mut()._ovdrvs,
+                    self.borrow_mut().raw_mut()._ovdrv_num as usize,
+                )
+            };
+            Ok(BoxOrMut::Ref(unsafe { &mut *raw[raw.len() - 1] }))
         } else {
             Err(AddOverDriveError { group, cut, amp })
         }

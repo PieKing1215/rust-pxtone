@@ -94,7 +94,7 @@ impl<'b, P: BorrowMut<PxToneService<'b>>> DelaysMut for P {
         group: u8,
         frequency: DelayUnit,
         rate: ZeroToOneF32,
-    ) -> Result<(), AddDelayError> {
+    ) -> Result<BoxOrMut<Self::D>, AddDelayError> {
         let (unit, freq) = match frequency {
             DelayUnit::Beat(f) => (pxtone_sys::DELAYUNIT_DELAYUNIT_Beat, f),
             DelayUnit::Measure(f) => (pxtone_sys::DELAYUNIT_DELAYUNIT_Meas, f),
@@ -106,7 +106,13 @@ impl<'b, P: BorrowMut<PxToneService<'b>>> DelaysMut for P {
                 .raw_mut()
                 .Delay_Add(unit, freq, *rate * 100.0, group as _)
         } {
-            Ok(())
+            let raw = unsafe {
+                slice::from_raw_parts_mut(
+                    self.borrow_mut().raw_mut()._delays,
+                    self.borrow_mut().raw_mut()._delay_num as usize,
+                )
+            };
+            Ok(BoxOrMut::Ref(unsafe { &mut *raw[raw.len() - 1] }))
         } else {
             Err(AddDelayError { group, frequency, rate })
         }

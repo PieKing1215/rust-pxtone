@@ -55,7 +55,7 @@ pub trait DelaysMut: Delays {
         group: u8,
         frequency: DelayUnit,
         rate: ZeroToOneF32,
-    ) -> Result<(), AddDelayError>;
+    ) -> Result<BoxOrMut<Self::D>, AddDelayError>;
 
     fn remove(&mut self, index: usize) -> bool;
 }

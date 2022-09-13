@@ -84,7 +84,12 @@ impl std::error::Error for AddOverDriveError {}
 pub trait OverDrivesMut: OverDrives {
     fn iter_mut<'a>(&'a mut self) -> Box<dyn Iterator<Item = BoxOrMut<Self::O>> + 'a>;
 
-    fn add(&mut self, group: u8, cut: OverDCut, amp: OverDAmp) -> Result<(), AddOverDriveError>;
+    fn add(
+        &mut self,
+        group: u8,
+        cut: OverDCut,
+        amp: OverDAmp,
+    ) -> Result<BoxOrMut<Self::O>, AddOverDriveError>;
 
     fn remove(&mut self, index: usize) -> bool;
 }
