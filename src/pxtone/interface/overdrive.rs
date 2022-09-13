@@ -2,8 +2,6 @@ use std::{fmt, ops::Deref};
 
 use crate::util::{BoxOrMut, BoxOrRef};
 
-use super::service::PxTone;
-
 /// Wrapper for an f32 representing an overdrive cut value, 0.5 to 0.999 (inclusive).
 #[derive(Clone, Copy, Debug)]
 pub struct OverDCut(f32);
@@ -91,7 +89,7 @@ pub trait OverDrivesMut: OverDrives {
     fn remove(&mut self, index: usize) -> bool;
 }
 
-pub trait HasOverDrives: PxTone {
+pub trait HasOverDrives {
     type OverDrives: OverDrives + Sized;
     type OverDrivesMut: OverDrivesMut + Sized;
 

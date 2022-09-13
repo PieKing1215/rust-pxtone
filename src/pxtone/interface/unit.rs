@@ -1,6 +1,6 @@
 use crate::util::{BoxOrMut, BoxOrRef};
 
-use super::service::{InvalidText, PxTone};
+use super::service::InvalidText;
 
 pub trait Unit {
     fn selected(&self) -> bool;
@@ -23,7 +23,7 @@ pub trait UnitsMut: Units {
     fn iter_mut<'a>(&'a mut self) -> Box<dyn Iterator<Item = BoxOrMut<Self::U>> + 'a>;
 }
 
-pub trait HasUnits: PxTone {
+pub trait HasUnits {
     type Units: Units + Sized;
     type UnitsMut: UnitsMut + Sized; // this type could be moved into Units, but I don't think it really improves anything
 

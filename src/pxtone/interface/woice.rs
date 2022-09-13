@@ -2,7 +2,7 @@ use std::{borrow::Borrow, convert::Infallible, marker::PhantomData};
 
 use crate::pxtone::util::{BoxOrMut, BoxOrRef};
 
-use super::service::{InvalidText, PxTone};
+use super::service::InvalidText;
 
 // TODO: this file has too many similarly named trait definitions in it, split into a couple files
 
@@ -351,7 +351,7 @@ pub trait WoicesMut: Woices {
     fn iter_mut<'a>(&'a mut self) -> Box<dyn Iterator<Item = BoxOrMut<Self::W>> + 'a>;
 }
 
-pub trait HasWoices: PxTone {
+pub trait HasWoices {
     type Woices: Woices + Sized;
     type WoicesMut: WoicesMut + Sized;
 

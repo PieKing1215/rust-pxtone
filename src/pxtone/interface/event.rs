@@ -8,8 +8,6 @@ use std::{
 
 use crate::pxtone::util::{BoxOrMut, BoxOrRef, ZeroToOneF32};
 
-use super::service::PxTone;
-
 pub trait BaseEvent {
     fn clock(&self) -> u32;
     fn set_clock(&mut self, clock: u32);
@@ -419,7 +417,7 @@ pub trait EventListMut: EventList {
     fn add<E: GenericEvent>(&mut self, event: &E) -> Result<(), AddEventError>;
 }
 
-pub trait HasEventList: PxTone {
+pub trait HasEventList {
     type EventList: EventList + Sized;
     type EventListMut: EventListMut + Sized;
 
