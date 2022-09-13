@@ -25,7 +25,7 @@ pub trait UnitsMut: Units {
 
 pub trait HasUnits: PxTone {
     type Units: Units + Sized;
-    type UnitsMut: UnitsMut + Sized;
+    type UnitsMut: UnitsMut + Sized; // this type could be moved into Units, but I don't think it really improves anything
 
     fn units(&self) -> BoxOrRef<Self::Units>;
     fn units_mut(&mut self) -> BoxOrMut<Self::UnitsMut>;
