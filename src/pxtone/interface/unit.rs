@@ -30,3 +30,85 @@ pub trait HasUnits: PxTone {
     fn units(&self) -> BoxOrRef<Self::Units>;
     fn units_mut(&mut self) -> BoxOrMut<Self::UnitsMut>;
 }
+
+/// Some compile fail tests to make sure mutability works correctly
+///
+/// ```compile_fail
+/// use pxtone::interface::unit::{HasUnits, Units, Unit, UnitsMut};
+/// fn _f<T: HasUnits>(has_units: &mut T) {
+///     for mut bu in has_units.units().iter() {
+///         let _ = bu.muted();
+///         let u: &mut dyn Unit = &mut *bu;
+///         let _ = u.muted();
+///     }
+/// }
+/// ```
+///
+/// ```compile_fail
+/// use pxtone::interface::unit::{HasUnits, Units, Unit, UnitsMut};
+/// fn _f<T: HasUnits>(has_units: &mut T) {
+///     for mut bu in has_units.units_mut().iter() {
+///         let _ = bu.muted();
+///         let u: &mut dyn Unit = &mut *bu;
+///         let _ = u.muted();
+///     }
+/// }
+/// ```
+///
+/// ```compile_fail
+/// use pxtone::interface::unit::{HasUnits, Units, Unit, UnitsMut};
+/// fn _f<T: HasUnits>(has_units: &mut T) {
+///     for mut bu in has_units.units_mut().iter_mut() {
+///         let _ = bu.muted();
+///         bu.set_muted(false);
+///         let u: &mut dyn Unit = &mut *bu;
+///         let _ = u.muted();
+///         u.set_muted(false);
+///
+///         let m = has_units.units_mut();
+///     }
+/// }
+/// ```
+#[cfg(doctest)]
+pub struct TestCheckMut;
+
+#[cfg(test)]
+mod tests {
+    use crate::interface::unit::{HasUnits, Unit, Units, UnitsMut};
+
+    #[test]
+    fn iter() {
+        fn _f<T: HasUnits>(has_units: &T) {
+            for bu in has_units.units().iter() {
+                let _ = bu.muted();
+                let u: &dyn Unit = &*bu;
+                let _ = u.muted();
+            }
+        }
+    }
+
+    #[test]
+    fn iter_mut() {
+        fn _f<T: HasUnits>(has_units: &mut T) {
+            for bu in has_units.units().iter() {
+                let _ = bu.muted();
+                let u: &dyn Unit = &*bu;
+                let _ = u.muted();
+            }
+
+            for bu in has_units.units_mut().iter() {
+                let _ = bu.muted();
+                let u: &dyn Unit = &*bu;
+                let _ = u.muted();
+            }
+
+            for mut bu in has_units.units_mut().iter_mut() {
+                let _ = bu.muted();
+                bu.set_muted(false);
+                let u: &mut dyn Unit = &mut *bu;
+                let _ = u.muted();
+                u.set_muted(false);
+            }
+        }
+    }
+}
