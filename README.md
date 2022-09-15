@@ -6,6 +6,8 @@
 
 High level bindings to pxtone for Rust
 
+_(note: the current release on crates.io is very outdated because I'm in the middle of a big refactor)_
+
 Run `cargo run --release --example full_playback` for a demo.<br>
 See [examples/](examples/) for sample code.
 
