@@ -20,7 +20,8 @@ fn main() {
 
     // init pxtone
     let bytes = include_bytes!("sample.ptcop");
-    let mut pxtone = PxToneService::read_bytes(bytes).expect("read_bytes failed");
+    let mut pxtone = PxToneService::new().expect("PxToneService::new failed");
+    pxtone.read_bytes(bytes).expect("read_bytes failed");
     pxtone
         .set_audio_format(config.channels() as u8, config.sample_rate().0)
         .expect("set_audio_format failed");

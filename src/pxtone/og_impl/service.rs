@@ -23,6 +23,13 @@ pub struct PxToneService<'p> {
 }
 
 impl<'p> PxToneService<'p> {
+    pub fn new() -> Result<Self, Error> {
+        let mut serv = unsafe { pxtnService::new() };
+        Error::from_raw(unsafe { serv.init_collage(pxtone_sys::pxtnMAX_EVENTNUM as _) })?;
+
+        Ok(Self { service: serv.into() })
+    }
+
     #[must_use]
     pub fn raw(&self) -> &pxtnService {
         &self.service
@@ -48,13 +55,7 @@ impl<'p, T: Into<BoxOrMut<'p, pxtnService>>> From<T> for PxToneService<'p> {
 impl<'p> PxToneServiceIO for PxToneService<'p> {
     type Error = Error;
 
-    fn read_bytes(bytes: &[u8]) -> Result<Self, Self::Error>
-    where
-        Self: Sized,
-    {
-        let mut serv = unsafe { pxtnService::new() };
-        Error::from_raw(unsafe { serv.init_collage(pxtone_sys::pxtnMAX_EVENTNUM as _) })?;
-
+    fn read_bytes(&mut self, bytes: &[u8]) -> Result<(), Self::Error> {
         let mut descriptor = unsafe { pxtnDescriptor::new() };
         if !unsafe {
             descriptor.set_memory_r(
@@ -65,9 +66,9 @@ impl<'p> PxToneServiceIO for PxToneService<'p> {
             return Err(Error::DescR);
         }
 
-        Error::from_raw(unsafe { serv.read(&mut descriptor) })?;
+        Error::from_raw(unsafe { self.service.read(&mut descriptor) })?;
 
-        Ok(serv.into())
+        Ok(())
     }
 
     fn write_file(&mut self, path: impl Into<PathBuf>) -> Result<Vec<u8>, Self::Error> {

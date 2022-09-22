@@ -25,7 +25,7 @@ fn main() {
     // load ptcop file
     let bytes = include_bytes!("sample.ptcop");
 
-    do_stuff::<PxToneService>(bytes).unwrap();
+    do_stuff(bytes, &mut PxToneService::new().unwrap()).unwrap();
 }
 
 // This stuff is in a separate function just to demonstrate how everything is trait based
@@ -33,8 +33,9 @@ fn do_stuff<
     PXTN: PxTone + PxToneServiceIO + HasUnits + HasWoices + HasEventList + HasDelays + HasOverDrives,
 >(
     bytes: &[u8],
+    pxtone: &mut PXTN,
 ) -> Result<(), PXTN::Error> {
-    let mut pxtone = PXTN::read_bytes(bytes).expect("read_bytes failed");
+    pxtone.read_bytes(bytes).expect("read_bytes failed");
 
     println!("Editing \"{}\"", pxtone.name());
 
