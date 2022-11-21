@@ -33,7 +33,7 @@ impl Woice for pxtnWoice {
     fn name(&self) -> String {
         unsafe {
             if !self.is_name_buf() {
-                return "".into();
+                return String::new();
             }
 
             let mut len = 0;

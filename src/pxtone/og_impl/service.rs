@@ -154,7 +154,7 @@ impl<'p> PxTone for PxToneService<'p> {
     fn name(&self) -> String {
         unsafe {
             if !(*self.service.text).is_name_buf() {
-                return "".into();
+                return String::new();
             }
 
             let mut len = 0;
@@ -192,7 +192,7 @@ impl<'p> PxTone for PxToneService<'p> {
     fn comment(&self) -> String {
         unsafe {
             if !(*self.service.text).is_comment_buf() {
-                return "".into();
+                return String::new();
             }
 
             let mut len = 0;

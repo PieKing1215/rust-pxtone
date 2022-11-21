@@ -36,7 +36,7 @@ impl Unit for pxtnUnit {
     fn name(&self) -> String {
         unsafe {
             if !self.is_name_buf() {
-                return "".into();
+                return String::new();
             }
 
             let mut len = 0;
@@ -118,7 +118,7 @@ impl UnitsMut for PxToneService<'_> {
         unsafe {
             let removed = self.raw_mut().Unit_Remove(index as _);
             if removed {
-                (&mut *self.raw_mut().evels).Record_UnitNo_Miss(index as _);
+                (*self.raw_mut().evels).Record_UnitNo_Miss(index as _);
             }
 
             removed
