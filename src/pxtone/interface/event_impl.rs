@@ -3,9 +3,9 @@
 use crate::pxtone::util::{BoxOrMut, BoxOrRef, ZeroToOneF32};
 
 use super::event::{
-    BaseEvent, EventGroupNo, EventKey, EventOn, EventPanTime, EventPanVolume, EventPorta,
-    EventTuning, EventVelocity, EventVoiceNo, EventVolume, GenericEvent, GenericEventKind,
-    GenericEventKindMut, GenericEventKindRef, PanValue, TuningValue,
+    BaseEvent, EventGroupNo, EventKey, EventKind, EventOn, EventPanTime, EventPanVolume,
+    EventPorta, EventTuning, EventVelocity, EventVoiceNo, EventVolume, GenericEvent,
+    GenericEventKind, GenericEventKindMut, GenericEventKindRef, PanValue, TuningValue,
 };
 
 pub type EventKindImpl<'a> = GenericEventKind<
@@ -60,6 +60,44 @@ pub struct EventImpl<'a> {
 }
 
 impl EventImpl<'_> {
+    #[allow(clippy::cast_precision_loss)]
+    #[must_use]
+    pub fn from_raw(clock: u32, unit_no: u8, kind: EventKind, value: u32) -> Option<Self> {
+        match kind {
+            EventKind::On => Some(Self::on(clock, unit_no, value as _)),
+            EventKind::Key => Some(Self::key(clock, unit_no, value as _)),
+            EventKind::PanVolume => Some(Self::pan_volume(
+                clock,
+                unit_no,
+                PanValue::new((value as f32 / 128.0) * 2.0 - 1.0),
+            )),
+            EventKind::Velocity => Some(Self::velocity(
+                clock,
+                unit_no,
+                ZeroToOneF32::new(value as f32 / 128.0),
+            )),
+            EventKind::Volume => Some(Self::volume(
+                clock,
+                unit_no,
+                ZeroToOneF32::new(value as f32 / 128.0),
+            )),
+            EventKind::Portament => Some(Self::porta(clock, unit_no, value as _)),
+            EventKind::VoiceNo => Some(Self::voice_no(clock, unit_no, value as _)),
+            EventKind::GroupNo => Some(Self::group_no(clock, unit_no, value as _)),
+            EventKind::Tuning => Some(Self::tuning(
+                clock,
+                unit_no,
+                TuningValue::new(f32::from_le_bytes(value.to_le_bytes())),
+            )),
+            EventKind::PanTime => Some(Self::pan_time(
+                clock,
+                unit_no,
+                PanValue::new((value as f32 / 128.0) * 2.0 - 1.0),
+            )),
+            _ => None,
+        }
+    }
+
     #[must_use]
     pub fn on(clock: u32, unit_no: u8, length: u32) -> Self {
         Self {

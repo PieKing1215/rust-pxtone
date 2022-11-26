@@ -8,6 +8,51 @@ use std::{
 
 use crate::pxtone::util::{BoxOrMut, BoxOrRef, ZeroToOneF32};
 
+#[repr(u8)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)]
+pub enum EventKind {
+    Null,
+    On,
+    Key,
+    PanVolume,
+    Velocity,
+    Volume,
+    Portament,
+    BeatClock,
+    BeatTempo,
+    BeatNum,
+    Repeat,
+    Last,
+    VoiceNo,
+    GroupNo,
+    Tuning,
+    PanTime,
+}
+
+impl From<u8> for EventKind {
+    fn from(v: u8) -> Self {
+        match v {
+            1 => Self::On,
+            2 => Self::Key,
+            3 => Self::PanVolume,
+            4 => Self::Velocity,
+            5 => Self::Volume,
+            6 => Self::Portament,
+            7 => Self::BeatClock,
+            8 => Self::BeatTempo,
+            9 => Self::BeatNum,
+            10 => Self::Repeat,
+            11 => Self::Last,
+            12 => Self::VoiceNo,
+            13 => Self::GroupNo,
+            14 => Self::Tuning,
+            15 => Self::PanTime,
+            _ => Self::Null,
+        }
+    }
+}
+
 pub trait BaseEvent {
     fn clock(&self) -> u32;
     fn set_clock(&mut self, clock: u32);
@@ -397,7 +442,7 @@ pub type GenericEventKindMut<
 pub trait EventList {
     type Event: GenericEvent;
 
-    fn iter(&self) -> Box<dyn Iterator<Item = &Self::Event>>;
+    fn iter(&self) -> Box<dyn Iterator<Item = &Self::Event> + '_>;
 }
 
 #[derive(Debug)]
@@ -412,15 +457,19 @@ impl fmt::Display for AddEventError {
 impl std::error::Error for AddEventError {}
 
 pub trait EventListMut: EventList {
-    fn iter_mut(&mut self) -> Box<dyn Iterator<Item = &mut Self::Event>>;
+    fn iter_mut(&mut self) -> Box<dyn Iterator<Item = &mut Self::Event> + '_>;
 
     fn add<E: GenericEvent>(&mut self, event: &E) -> Result<(), AddEventError>;
 }
 
 pub trait HasEventList {
-    type EventList: EventList + Sized;
-    type EventListMut: EventListMut + Sized;
+    type EventList<'a>: EventList + Sized
+    where
+        Self: 'a;
+    type EventListMut<'a>: EventListMut + Sized
+    where
+        Self: 'a;
 
-    fn event_list(&self) -> BoxOrRef<Self::EventList>;
-    fn event_list_mut(&mut self) -> BoxOrMut<Self::EventListMut>;
+    fn event_list(&self) -> BoxOrRef<Self::EventList<'_>>;
+    fn event_list_mut(&mut self) -> BoxOrMut<Self::EventListMut<'_>>;
 }

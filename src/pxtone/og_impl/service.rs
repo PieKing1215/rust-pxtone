@@ -11,7 +11,7 @@ use pxtone_sys::{fclose, fopen, pxtnDescriptor, pxtnService, pxtnVOMITPREPARATIO
 use crate::{
     interface::{
         io::PxToneServiceIO,
-        moo::{Fade, Moo},
+        moo::{AsMoo, Fade, Moo},
         service::{InvalidText, PxTone},
     },
     og_impl::error::Error,
@@ -228,7 +228,17 @@ impl<'p> PxTone for PxToneService<'p> {
     }
 }
 
-impl<'p> Moo<Error> for PxToneService<'p> {
+impl<'p> AsMoo for PxToneService<'p> {
+    type M<'a> = Self where Self: 'a;
+
+    fn as_moo(&mut self) -> BoxOrMut<Self::M<'_>> {
+        BoxOrMut::Ref(self)
+    }
+}
+
+impl<'p> Moo<'_> for PxToneService<'p> {
+    type Error = Error;
+
     fn set_audio_format(&mut self, channels: u8, sample_rate: u32) -> Result<(), Error> {
         if unsafe {
             self.service
