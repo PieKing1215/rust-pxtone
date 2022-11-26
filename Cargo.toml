@@ -12,10 +12,12 @@ edition = "2021"
 
 [dependencies]
 pxtone-sys = { version = "0.2", optional = true }
+byteorder = { version = "1", optional = true }
 
 [features]
-default = ["og-impl"]
+default = ["og-impl", "rust-impl"]
 og-impl = ["dep:pxtone-sys"]
+rust-impl = ["dep:byteorder"]
 
 [dev-dependencies]
 cpal = "0.14"
