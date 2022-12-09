@@ -1,4 +1,4 @@
-use std::{marker::Send, time::Duration};
+use std::{marker::Send, path::Path, time::Duration};
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use pxtone::{
@@ -13,10 +13,15 @@ use pxtone::{
 
 fn main() {
     // init pxtone
-    let bytes = include_bytes!("sample.ptcop");
+    let bytes = std::fs::read(Path::new(
+        &std::env::args()
+            .nth(1)
+            .unwrap_or_else(|| "examples/sample.ptcop".into()),
+    ))
+    .unwrap();
     let mut pxtone = RPxTone::new();
 
-    do_stuff(bytes, &mut pxtone).unwrap();
+    do_stuff(&bytes, &mut pxtone).unwrap();
 }
 
 fn do_stuff<'a, PXTN: PxTone + PxToneServiceIO + AsMoo>(
@@ -55,7 +60,7 @@ fn play<'a, M: Moo<'a> + Send + Sync>(mut moo: BoxOrMut<M>) -> Result<(), M::Err
     moo.prepare_sample().expect("prepare_sample failed");
     let total_samples = moo.total_samples();
     println!("pxtone.get_total_samples() = {}", total_samples);
-    let mut sn = 9600;
+    let mut sn = 10000;
     sn = sn - (sn % 4);
     println!("sn = {}", sn);
     let mut mem: Vec<i16> = vec![0; sn as usize * 2];
@@ -81,7 +86,7 @@ fn play<'a, M: Moo<'a> + Send + Sync>(mut moo: BoxOrMut<M>) -> Result<(), M::Err
                     let start = std::time::Instant::now();
                     moo.sample(&mut mem).unwrap();
                     println!(
-                        "{}",
+                        "{:.1}ms",
                         std::time::Instant::now().duration_since(start).as_micros() as f32 / 1000.0
                     );
                     sender2.send(mem).unwrap();

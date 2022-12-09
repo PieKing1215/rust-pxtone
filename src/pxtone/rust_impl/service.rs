@@ -1,6 +1,6 @@
 use crate::interface::service::{InvalidText, PxTone};
 
-use super::event::RPxToneEventList;
+use super::{event::RPxToneEventList, woice::RPxToneWoice};
 
 pub struct RPxTone {
     beat_num: i32,
@@ -13,6 +13,7 @@ pub struct RPxTone {
     comment: String,
 
     pub(crate) event_list: RPxToneEventList,
+    pub(crate) woices: Vec<RPxToneWoice>,
 }
 
 impl Default for RPxTone {
@@ -34,6 +35,7 @@ impl RPxTone {
             name: String::new(),
             comment: String::new(),
             event_list: RPxToneEventList::default(),
+            woices: Vec::new(),
         }
     }
 }

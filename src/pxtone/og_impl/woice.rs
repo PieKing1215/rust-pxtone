@@ -166,10 +166,11 @@ impl VoicePCM for pxtnVOICEUNIT {
         unsafe { (*self.p_pcm)._bps as u8 }
     }
 
-    fn sample_buffer(&self) -> &[u8] {
+    fn sample(&self, cycle: f32) -> f32 {
         let pcm = unsafe { &*self.p_pcm };
         let size = (pcm._smp_head + pcm._smp_body + pcm._smp_tail) * pcm._ch * pcm._bps / 8;
-        unsafe { slice::from_raw_parts(pcm._p_smp, size as usize) }
+        let buf = unsafe { slice::from_raw_parts(pcm._p_smp, size as usize) };
+        buf[(buf.len() as f64 * cycle as f64) as usize % buf.len()] as f32 / 256.0 - 0.5
     }
 }
 

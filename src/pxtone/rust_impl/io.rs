@@ -2,11 +2,14 @@ use std::io::{Cursor, Read};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 
-use crate::interface::{
-    event::{EventKind, EventListMut, HasEventList},
-    event_impl::EventImpl,
-    io::PxToneServiceIO,
-    service::PxTone,
+use crate::{
+    interface::{
+        event::{EventKind, EventListMut, HasEventList},
+        event_impl::EventImpl,
+        io::PxToneServiceIO,
+        service::PxTone,
+    },
+    rust_impl::woice::{RPxToneVoicePCM, RPxToneWoice, RPxToneWoicePCM, RPxToneWoiceType},
 };
 
 use super::service::RPxTone;
@@ -125,6 +128,48 @@ impl PxToneServiceIO for RPxTone {
                             .unwrap();
                     }
                 },
+                b"matePCM " => {
+                    let _x3x_unit_no = c.read_u16::<LittleEndian>().unwrap();
+                    let basic_key = c.read_u16::<LittleEndian>().unwrap();
+                    let voice_flags = c.read_u32::<LittleEndian>().unwrap();
+                    let channels = c.read_u16::<LittleEndian>().unwrap();
+                    let bits_per_sample = c.read_u16::<LittleEndian>().unwrap();
+                    let samples_per_second = c.read_u32::<LittleEndian>().unwrap();
+                    let tuning = c.read_f32::<LittleEndian>().unwrap();
+                    let data_size = c.read_u32::<LittleEndian>().unwrap();
+
+                    assert_eq!(voice_flags & 0xffff_fff8, 0); // only flags 0x1, 0x2, and 0x4 are used
+
+                    // println!("PCM {_x3x_unit_no} {basic_key} {voice_flags} {channels} {bits_per_sample} {samples_per_second} {tuning} {data_size}");
+
+                    let mut data_buf = vec![0_u8; data_size as _];
+                    c.read_exact(&mut data_buf).unwrap();
+
+                    self.woices.push(RPxToneWoice {
+                        name: String::new(),
+                        woice_type: RPxToneWoiceType::PCM(RPxToneWoicePCM {
+                            voice: RPxToneVoicePCM::new(
+                                basic_key as _,
+                                128,
+                                64,
+                                tuning,
+                                channels as _,
+                                samples_per_second,
+                                bits_per_sample as _,
+                                data_buf,
+                                voice_flags,
+                            ),
+                        }),
+                    });
+                },
+                // b"matePTV " => {
+                //     let _x3x_unit_no = c.read_u16::<LittleEndian>().unwrap();
+                //     let _rrr = c.read_u16::<LittleEndian>().unwrap();
+                //     let tuning = c.read_f32::<LittleEndian>().unwrap();
+                //     let _size = c.read_u32::<LittleEndian>().unwrap();
+
+                //     println!("PCM {_x3x_unit_no} {_rrr} {tuning} {_size}");
+                // },
                 b"num UNIT" => {
                     if block_size != 4 {
                         return Err(RPxToneIOError::IncorrectBlockSize {

@@ -143,7 +143,8 @@ pub trait VoicePCM: Voice {
     /// Should only be 8 or 16
     fn bits_per_sample(&self) -> u8;
 
-    fn sample_buffer(&self) -> &[u8];
+    /// cycle is >= 0.0 and each 1.0 represents 1Hz passing
+    fn sample(&self, cycle: f32) -> f32;
 }
 
 pub trait PTVCoordinateWavePoint {

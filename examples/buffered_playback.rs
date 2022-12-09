@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use pxtone::{
     interface::{io::PxToneServiceIO, moo::Moo},
@@ -19,9 +21,14 @@ fn main() {
     let config = device.default_output_config().unwrap();
 
     // init pxtone
-    let bytes = include_bytes!("sample.ptcop");
+    let bytes = std::fs::read(Path::new(
+        &std::env::args()
+            .nth(1)
+            .unwrap_or_else(|| "examples/sample.ptcop".into()),
+    ))
+    .unwrap();
     let mut pxtone = PxToneService::new().expect("PxToneService::new failed");
-    pxtone.read_bytes(bytes).expect("read_bytes failed");
+    pxtone.read_bytes(&bytes).expect("read_bytes failed");
     pxtone
         .set_audio_format(config.channels() as u8, config.sample_rate().0)
         .expect("set_audio_format failed");
@@ -48,7 +55,12 @@ fn main() {
     let mut sample_i = 0;
     let mut next_value = move || {
         if sample_i >= mem.len() {
+            let start = std::time::Instant::now();
             pxtone.sample(&mut mem).expect("sample failed");
+            println!(
+                "{:.1}ms",
+                std::time::Instant::now().duration_since(start).as_micros() as f32 / 1000.0
+            );
             sample_i -= mem.len();
         }
 

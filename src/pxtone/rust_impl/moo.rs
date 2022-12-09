@@ -6,11 +6,15 @@ use std::{
 
 use crate::{
     interface::{
-        event::{BaseEvent, EventKey, EventOn, GenericEvent, GenericEventKind},
+        event::{
+            BaseEvent, EventKey, EventOn, EventVelocity, EventVoiceNo, EventVolume, GenericEvent,
+            GenericEventKind,
+        },
         moo::{AsMoo, Moo},
         service::PxTone,
+        woice::{VoicePCM, Woice, WoiceType},
     },
-    util::BoxOrMut,
+    util::{BoxOrMut, ZeroToOneF32},
 };
 
 use super::service::RPxTone;
@@ -29,12 +33,21 @@ pub struct RPxToneMoo<'a> {
 struct UnitData {
     on: Option<UnitOnData>,
     key: i32,
+    volume: ZeroToOneF32,
+    velocity: ZeroToOneF32,
+    woice: u8,
 }
 
 #[allow(clippy::derivable_impls)]
 impl Default for UnitData {
     fn default() -> Self {
-        Self { on: None, key: 0 }
+        Self {
+            on: None,
+            key: 0,
+            volume: ZeroToOneF32::new(104.0 / 128.0),
+            velocity: ZeroToOneF32::new(104.0 / 128.0),
+            woice: 0,
+        }
     }
 }
 
@@ -92,12 +105,15 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
     fn sample(&mut self, buffer: &mut [i16]) -> Result<(), RPxToneMooError> {
         // println!("buf {}", buffer.len());
         let evs = self.pxtone.event_list.events.iter().collect::<Vec<_>>();
+
+        let smooth_smps = (self.sample_rate as f32 / 250.0) as u32;
         // println!("evs {}", evs.len());
 
         let ticks_per_sec = (self.pxtone.beat_clock() as f32 * self.pxtone.beat_tempo()) / 60.0;
 
         let mut skip = 0;
         for ch in buffer.chunks_mut(100) {
+            // only check events every 100 samples
             let clock_secs = (self.smp as f32 / self.channels as f32) / self.sample_rate as f32;
             let clock_ticks = clock_secs * ticks_per_sec;
 
@@ -121,6 +137,15 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                     },
                     GenericEventKind::Key(key) => {
                         self.unit_data.entry(e.unit_no()).or_default().key = key.key();
+                    },
+                    GenericEventKind::Velocity(vel) => {
+                        self.unit_data.entry(e.unit_no()).or_default().velocity = vel.velocity();
+                    },
+                    GenericEventKind::Volume(vol) => {
+                        self.unit_data.entry(e.unit_no()).or_default().volume = vol.volume();
+                    },
+                    GenericEventKind::VoiceNo(voice) => {
+                        self.unit_data.entry(e.unit_no()).or_default().woice = voice.voice_no();
                     },
                     _ => {},
                 }
@@ -150,40 +175,27 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                         let on_ticks = clock_ticks - on.start as f32;
                         let on_secs = on_ticks / ticks_per_sec;
 
-                        let cycle = on_secs * freq * 2.0;
-                        let val = match unit {
-                            0 => (cycle * 2.0 * PI).sin(),        // sin
-                            1 | 3 => ((cycle % 1.0) - 0.5) * 2.0, // saw
-                            2 => {
-                                if cycle % 1.0 > 0.5 {
-                                    1.0
-                                } else {
-                                    -1.0
-                                }
-                            }, // square
-                            _ => 0.0,                             // sin
-                                                                   // 0 | 1 => {
-                                                                   //     if cycle % 1.0 > 0.5 {
-                                                                   //         1.0
-                                                                   //     } else {
-                                                                   //         -1.0
-                                                                   //     }
-                                                                   // }, // square
-                                                                   // 2 | 3 => {
-                                                                   //     if cycle % 1.0 > 0.75 {
-                                                                   //         1.0
-                                                                   //     } else {
-                                                                   //         -1.0
-                                                                   //     }
-                                                                   // }, // 25%
-                                                                   // 4 => ((cycle % 1.0) - 0.5) * 2.0, // saw
-                                                                   // _ => (cycle * 2.0 * PI).sin(),    // sin
-                        };
+                        let cycle = on_secs * freq;
 
-                        // if *unit == 0 {
-                        //     println!("{note} {clock_ticks} {} {cl} {i} {key} {freq} {val} {}", self.smp, clock_ticks / self.sample_rate as f32 * freq);
-                        // }
-                        v += (val * 256.0) as i16;
+                        let woice = &self.pxtone.woices.get(data.woice as usize);
+
+                        if let Some(woice) = woice {
+                            #[allow(clippy::single_match)]
+                            match woice.woice_type() {
+                                WoiceType::PCM(pcm) => {
+                                    let mut val = pcm.voice.sample(cycle);
+
+                                    let smooth = pcm.voice.flags & 0x02 != 0;
+                                    if smooth && cycle * 44100.0 < smooth_smps as f32 {
+                                        val *= (cycle * 44100.0) / smooth_smps as f32;
+                                    }
+
+                                    v += (val * *data.volume * *data.velocity * i16::MAX as f32)
+                                        as i16;
+                                },
+                                _ => {},
+                            };
+                        }
                     }
                 }
 
