@@ -96,6 +96,7 @@ impl<'a, T: 'a + ?Sized> From<&'a mut T> for BoxOrMut<'a, T> {
 
 /// Wrapper for an f32 representing a value from 0.0 to 1.0 (inclusive).
 #[derive(Clone, Copy, Debug)]
+#[repr(transparent)]
 pub struct ZeroToOneF32(f32);
 
 impl ZeroToOneF32 {

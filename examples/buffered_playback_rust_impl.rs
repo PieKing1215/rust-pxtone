@@ -12,6 +12,9 @@ use pxtone::{
 };
 
 fn main() {
+    #[cfg(feature = "profile")]
+    profiling::tracy_client::Client::start();
+
     // init pxtone
     let bytes = std::fs::read(Path::new(
         &std::env::args()

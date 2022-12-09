@@ -157,7 +157,9 @@ impl PxToneServiceIO for RPxTone {
                                 samples_per_second,
                                 bits_per_sample as _,
                                 data_buf,
-                                voice_flags,
+                                voice_flags & 0x1 != 0,
+                                voice_flags & 0x2 != 0,
+                                voice_flags & 0x4 != 0,
                             ),
                         }),
                     });

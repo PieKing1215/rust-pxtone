@@ -47,12 +47,16 @@ pub struct RPxToneVoicePCM {
     pub(crate) pan: i32,
     pub(crate) tuning: f32,
 
-    pub(crate) flags: u32, // TODO: bitflags
+    pub(crate) flag_loop: bool,
+    pub(crate) flag_smooth: bool,
+    pub(crate) flag_beat_fit: bool,
+
     pub(crate) channels: u8,
     pub(crate) samples_per_second: u32,
     pub(crate) bits_per_sample: u8,
     pub(crate) data: Vec<u8>,
     pub(crate) sample_num: u32,
+    pub(crate) ratio_to_a: f32,
 }
 
 impl RPxToneVoicePCM {
@@ -67,21 +71,29 @@ impl RPxToneVoicePCM {
         samples_per_second: u32,
         bits_per_sample: u8,
         data: Vec<u8>,
-        flags: u32,
+        flag_loop: bool,
+        flag_smooth: bool,
+        flag_beat_fit: bool,
     ) -> Self {
         let sample_num: u32 = data.len() as u32 / (bits_per_sample as u32 / 8 * channels as u32);
+
+        // a woice with 200 samples at 44100Hz is A
+        let ratio_to_a = sample_num as f32 / (200.0 * samples_per_second as f32 / 44100.0);
 
         Self {
             basic_key,
             volume,
             pan,
             tuning,
-            flags,
+            flag_loop,
+            flag_smooth,
+            flag_beat_fit,
             channels,
             samples_per_second,
             bits_per_sample,
             data,
             sample_num,
+            ratio_to_a,
         }
     }
 }
@@ -134,12 +146,12 @@ impl VoicePCM for RPxToneVoicePCM {
     }
 
     #[allow(clippy::cast_precision_loss)]
+    #[allow(clippy::inline_always)]
+    #[inline(always)] // this function is very hot
     fn sample(&self, cycle: f32) -> f32 {
-        let ratio_to_a =
-            self.sample_num as f32 / (200.0 * self.samples_per_second as f32 / 44100.0);
-        let idx = cycle / ratio_to_a;
-        if self.flags & 0x01 > 0 {
-            // loop flag
+        let idx = cycle / self.ratio_to_a;
+
+        if self.flag_loop {
             self.data[(self.data.len() as f32 * idx as f32) as usize % self.data.len()] as f32
                 / 256.0
                 - 0.5
@@ -601,6 +613,7 @@ impl Woice for RPxToneWoice {
         Ok(())
     }
 
+    #[inline]
     fn woice_type(
         &self,
     ) -> crate::interface::woice::WoiceTypeRef<

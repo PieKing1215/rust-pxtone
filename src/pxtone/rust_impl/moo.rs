@@ -32,6 +32,7 @@ pub struct RPxToneMoo<'a> {
 struct UnitData {
     on: Option<UnitOnData>,
     key: i32,
+    key_freq: f32,
     volume: ZeroToOneF32,
     velocity: ZeroToOneF32,
     woice: u8,
@@ -43,6 +44,7 @@ impl Default for UnitData {
         Self {
             on: None,
             key: 0,
+            key_freq: 0.0,
             volume: ZeroToOneF32::new(104.0 / 128.0),
             velocity: ZeroToOneF32::new(104.0 / 128.0),
             woice: 0,
@@ -104,6 +106,7 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
     #[allow(clippy::cast_precision_loss)]
     #[allow(clippy::unreadable_literal)]
     fn sample(&mut self, buffer: &mut [i16]) -> Result<(), RPxToneMooError> {
+        profiling::scope!("sample");
         // println!("buf {}", buffer.len());
         let evs = self.pxtone.event_list.events.iter().collect::<Vec<_>>();
 
@@ -113,101 +116,119 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
         let ticks_per_sec = (self.pxtone.beat_clock() as f32 * self.pxtone.beat_tempo()) / 60.0;
 
         let mut skip = 0;
+        // only check events every 100 samples, minor performance boost
         for ch in buffer.chunks_mut(100) {
-            // only check events every 100 samples
+            profiling::scope!("chunk");
             let clock_secs = (self.smp as f32 / self.channels as f32) / self.sample_rate as f32;
             let clock_ticks = clock_secs * ticks_per_sec;
+            {
+                profiling::scope!("events");
+                for (i, e) in evs.iter().enumerate().skip(skip) {
+                    // if e.unit_no() != 0 { continue; }
 
-            for (i, e) in evs.iter().enumerate().skip(skip) {
-                // if e.unit_no() != 0 { continue; }
+                    let e_clock = e.clock() as f32;
 
-                let e_clock = e.clock() as f32;
+                    if e_clock < self.last_clock {
+                        continue;
+                    }
+                    if e_clock > clock_ticks {
+                        skip = i - 1;
+                        break;
+                    }
 
-                if e_clock < self.last_clock {
-                    continue;
-                }
-                if e_clock > clock_ticks {
-                    skip = i - 1;
-                    break;
-                }
+                    match e.kind() {
+                        GenericEventKind::On(on) => {
+                            self.unit_data.entry(e.unit_no()).or_default().on =
+                                Some(UnitOnData { start: on.clock(), length: on.length() });
+                        },
+                        GenericEventKind::Key(key) => {
+                            let key_v = key.key();
+                            self.unit_data.entry(e.unit_no()).or_default().key = key_v;
 
-                match e.kind() {
-                    GenericEventKind::On(on) => {
-                        self.unit_data.entry(e.unit_no()).or_default().on =
-                            Some(UnitOnData { start: on.clock(), length: on.length() });
-                    },
-                    GenericEventKind::Key(key) => {
-                        self.unit_data.entry(e.unit_no()).or_default().key = key.key();
-                    },
-                    GenericEventKind::Velocity(vel) => {
-                        self.unit_data.entry(e.unit_no()).or_default().velocity = vel.velocity();
-                    },
-                    GenericEventKind::Volume(vol) => {
-                        self.unit_data.entry(e.unit_no()).or_default().volume = vol.volume();
-                    },
-                    GenericEventKind::VoiceNo(voice) => {
-                        self.unit_data.entry(e.unit_no()).or_default().woice = voice.voice_no();
-                    },
-                    _ => {},
+                            // TODO: make this not witchcraft
+                            // 16.3515 is C0 in Hz
+                            // 13056 is the "note unit" for C0
+                            // 256 "note units" per real semitone
+                            // 1.05946^x == 2^(x/12)
+                            // 1.05946 == 2^(1/12)
+                            #[allow(clippy::excessive_precision)]
+                            let freq =
+                                16.3515 * (1.0594630943592953_f32).powi((key_v - 13056) / 256);
+
+                            self.unit_data.entry(e.unit_no()).or_default().key_freq = freq;
+                        },
+                        GenericEventKind::Velocity(vel) => {
+                            self.unit_data.entry(e.unit_no()).or_default().velocity =
+                                vel.velocity();
+                        },
+                        GenericEventKind::Volume(vol) => {
+                            self.unit_data.entry(e.unit_no()).or_default().volume = vol.volume();
+                        },
+                        GenericEventKind::VoiceNo(voice) => {
+                            self.unit_data.entry(e.unit_no()).or_default().woice = voice.voice_no();
+                        },
+                        _ => {},
+                    }
                 }
             }
 
-            for bsmp in ch {
-                let clock_secs = (self.smp as f32 / self.channels as f32) / self.sample_rate as f32;
-                let clock_ticks = clock_secs * ticks_per_sec;
+            {
+                profiling::scope!("sample chunk");
+                for bsmp in ch {
+                    profiling::scope!("one sample");
+                    let clock_secs =
+                        (self.smp as f32 / self.channels as f32) / self.sample_rate as f32;
+                    let clock_ticks = clock_secs * ticks_per_sec;
 
-                // println!("skip {skip}");
-                let mut v = 0;
+                    // println!("skip {skip}");
+                    let mut v = 0;
 
-                #[allow(clippy::for_kv_map)]
-                for (_unit, data) in &mut self.unit_data {
-                    if let Some(on) = &mut data.on {
-                        if clock_ticks > (on.start + on.length) as f32 {
-                            data.on = None;
-                            continue;
-                        }
+                    #[allow(clippy::for_kv_map)]
+                    for (_unit, data) in &mut self.unit_data {
+                        if let Some(on) = &mut data.on {
+                            if clock_ticks > (on.start + on.length) as f32 {
+                                data.on = None;
+                                continue;
+                            }
 
-                        let note = data.key as f32;
+                            let on_ticks = clock_ticks - on.start as f32;
+                            let on_secs = on_ticks / ticks_per_sec;
 
-                        // TODO: make this not witchcraft
-                        #[allow(clippy::excessive_precision)]
-                        let freq =
-                            16.3515 * (1.0594630943592953_f32).powf((note - 13056.0) / 256.0);
+                            let cycle = on_secs * data.key_freq;
 
-                        let on_ticks = clock_ticks - on.start as f32;
-                        let on_secs = on_ticks / ticks_per_sec;
+                            let woice = &self.pxtone.woices.get(data.woice as usize);
 
-                        let cycle = on_secs * freq;
+                            if let Some(woice) = woice {
+                                #[allow(clippy::single_match)]
+                                match woice.woice_type() {
+                                    WoiceType::PCM(pcm) => {
+                                        let mut val = pcm.voice.sample(cycle);
 
-                        let woice = &self.pxtone.woices.get(data.woice as usize);
+                                        if pcm.voice.flag_smooth
+                                            && cycle * 44100.0 < smooth_smps as f32
+                                        {
+                                            val *= (cycle * 44100.0) / smooth_smps as f32;
+                                        }
 
-                        if let Some(woice) = woice {
-                            #[allow(clippy::single_match)]
-                            match woice.woice_type() {
-                                WoiceType::PCM(pcm) => {
-                                    let mut val = pcm.voice.sample(cycle);
-
-                                    let smooth = pcm.voice.flags & 0x02 != 0;
-                                    if smooth && cycle * 44100.0 < smooth_smps as f32 {
-                                        val *= (cycle * 44100.0) / smooth_smps as f32;
-                                    }
-
-                                    v += (val * *data.volume * *data.velocity * i16::MAX as f32)
-                                        as i16;
-                                },
-                                _ => {},
-                            };
+                                        v += (val * *data.volume * *data.velocity * i16::MAX as f32)
+                                            as i16;
+                                    },
+                                    _ => {},
+                                };
+                            }
                         }
                     }
-                }
 
-                // println!("{v} {l}");
-                *bsmp = v;
-                self.smp += 1;
+                    // println!("{v} {l}");
+                    *bsmp = v;
+                    self.smp += 1;
+                }
             }
 
             self.last_clock = clock_ticks;
         }
+
+        profiling::finish_frame!();
         // println!("done");
         Ok(())
     }

@@ -13,11 +13,16 @@ edition = "2021"
 [dependencies]
 pxtone-sys = { version = "0.2", optional = true }
 byteorder = { version = "1", optional = true }
+profiling = "1.0"
 
 [features]
 default = ["og-impl", "rust-impl"]
 og-impl = ["dep:pxtone-sys"]
 rust-impl = ["dep:byteorder"]
+profile = ["profiling/profile-with-tracy"]
 
 [dev-dependencies]
 cpal = "0.14"
+
+[profile.release]
+lto = "thin"
