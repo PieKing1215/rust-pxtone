@@ -150,7 +150,7 @@ impl EventImpl<'_> {
     #[must_use]
     pub fn group_no(clock: u32, unit_no: u8, group_no: u8) -> Self {
         Self {
-            kind: EventKindImpl::VoiceNo((BaseEventImpl { clock, unit_no }, group_no)),
+            kind: EventKindImpl::GroupNo((BaseEventImpl { clock, unit_no }, group_no)),
         }
     }
 
