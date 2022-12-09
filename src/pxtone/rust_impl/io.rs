@@ -17,11 +17,18 @@ pub struct RPxToneIO {}
 pub enum RPxToneIOError {
     IncorrectHeader(String),
     BlockNotFound(String),
+    IncorrectBlockSize {
+        block: String,
+        expected: u32,
+        actual: u32,
+    },
+    AntiOper,
 }
 
 impl PxToneServiceIO for RPxTone {
     type Error = RPxToneIOError;
 
+    #[allow(clippy::too_many_lines)]
     fn read_bytes(&mut self, bytes: &[u8]) -> Result<(), Self::Error> {
         let mut c = Cursor::new(bytes);
 
@@ -34,68 +41,129 @@ impl PxToneServiceIO for RPxTone {
             ));
         }
 
-        // MasterV5
-        seek_block(&mut c, "MasterV5")?;
-        assert_eq!(c.read_u32::<LittleEndian>().unwrap(), 15);
-        let beat_clock = c.read_i16::<LittleEndian>().unwrap();
-        let beat_num = c.read_i8().unwrap();
-        let beat_tempo = c.read_f32::<LittleEndian>().unwrap();
-        let clock_repeat = c.read_i32::<LittleEndian>().unwrap();
-        let clock_last = c.read_i32::<LittleEndian>().unwrap();
+        let _exe_ver = c.read_u16::<LittleEndian>().unwrap();
+        let _rrr = c.read_u16::<LittleEndian>().unwrap();
 
-        let repeat_measure = clock_repeat / (beat_num as i32 * beat_clock as i32);
-        let last_measure = clock_last / (beat_num as i32 * beat_clock as i32);
+        let mut last_eve_pos = 0;
 
-        let mut num_measures = 1;
+        loop {
+            let mut block_name_buf = [0_u8; 8];
+            c.read_exact(&mut block_name_buf).unwrap();
+            let block_name = String::from_utf8_lossy(&block_name_buf).to_string();
+            let block_size = c.read_u32::<LittleEndian>().unwrap();
 
-        if repeat_measure >= num_measures {
-            num_measures = repeat_measure + 1;
-        }
+            match &block_name_buf {
+                b"MasterV5" => {
+                    if block_size != 15 {
+                        return Err(RPxToneIOError::IncorrectBlockSize {
+                            block: block_name,
+                            expected: 15,
+                            actual: block_size,
+                        });
+                    }
 
-        if last_measure > num_measures {
-            num_measures = last_measure;
-        }
+                    let beat_clock = c.read_i16::<LittleEndian>().unwrap();
+                    let beat_num = c.read_i8().unwrap();
+                    let beat_tempo = c.read_f32::<LittleEndian>().unwrap();
+                    let clock_repeat = c.read_i32::<LittleEndian>().unwrap();
+                    let clock_last = c.read_i32::<LittleEndian>().unwrap();
 
-        self.set_beat_clock(beat_clock as _);
-        self.set_beat_num(beat_num as _);
-        self.set_beat_tempo(beat_tempo);
-        self.set_repeat_measure(repeat_measure);
-        self.set_last_measure(last_measure);
+                    let repeat_measure = clock_repeat / (beat_num as i32 * beat_clock as i32);
+                    let last_measure = clock_last / (beat_num as i32 * beat_clock as i32);
 
-        seek_block(&mut c, "Event V5")?;
-        let _block_size = c.read_u32::<LittleEndian>().unwrap();
+                    let mut num_measures = 1;
 
-        let num_events = c.read_u32::<LittleEndian>().unwrap();
-        println!("num_events = {num_events}");
+                    if repeat_measure >= num_measures {
+                        num_measures = repeat_measure + 1;
+                    }
 
-        let mut abs_position = 0;
-        let mut last = 0;
+                    if last_measure > num_measures {
+                        num_measures = last_measure;
+                    }
 
-        for _ in 0..num_events {
-            let pos: u32 = v_r(&mut c).unwrap();
-            let unit_no = c.read_u8().unwrap();
-            let et = c.read_u8().unwrap();
-            // println!("{et}");
-            let event_kind: EventKind = et.into();
-            let event_value: u32 = v_r(&mut c).unwrap();
+                    self.set_beat_clock(beat_clock as _);
+                    self.set_beat_num(beat_num as _);
+                    self.set_beat_tempo(beat_tempo);
+                    self.set_repeat_measure(repeat_measure);
+                    self.set_last_measure(last_measure);
+                    self.set_num_measures(num_measures);
+                },
+                b"Event V5" => {
+                    let num_events = c.read_u32::<LittleEndian>().unwrap();
+                    println!("num_events = {num_events}");
 
-            if event_kind == EventKind::Null {
-                // TODO: this should probably return an Err
-                eprintln!("Invalid event!");
-                continue;
+                    let mut abs_position = 0;
+
+                    for _ in 0..num_events {
+                        let pos: u32 = v_r(&mut c).unwrap();
+                        let unit_no = c.read_u8().unwrap();
+                        let et = c.read_u8().unwrap();
+                        // println!("{et}");
+                        let event_kind: EventKind = et.into();
+                        let event_value: u32 = v_r(&mut c).unwrap();
+
+                        if event_kind == EventKind::Null {
+                            // TODO: this should probably return an Err
+                            eprintln!("Invalid event!");
+                            continue;
+                        }
+
+                        abs_position += pos;
+
+                        last_eve_pos = last_eve_pos.max(abs_position);
+
+                        self.event_list_mut()
+                            .add(
+                                &EventImpl::from_raw(
+                                    abs_position,
+                                    unit_no,
+                                    event_kind,
+                                    event_value,
+                                )
+                                .unwrap(),
+                            )
+                            .unwrap();
+                    }
+                },
+                b"num UNIT" => {
+                    if block_size != 4 {
+                        return Err(RPxToneIOError::IncorrectBlockSize {
+                            block: block_name,
+                            expected: 15,
+                            actual: block_size,
+                        });
+                    }
+
+                    let _num_unit = c.read_u32::<LittleEndian>().unwrap();
+                },
+                b"textNAME" => {
+                    let mut name_buf = vec![0_u8; block_size as usize];
+                    c.read_exact(&mut name_buf).unwrap();
+                    let name = String::from_utf8(name_buf).unwrap();
+                    self.set_name(name).unwrap();
+                },
+                b"textCOMM" => {
+                    let mut comment_buf = vec![0_u8; block_size as usize];
+                    c.read_exact(&mut comment_buf).unwrap();
+                    let comment = String::from_utf8(comment_buf).unwrap();
+                    self.set_comment(comment).unwrap();
+                },
+                b"pxtoneND" => {
+                    break;
+                },
+                b"antiOPER" => {
+                    return Err(RPxToneIOError::AntiOper);
+                },
+                _ => {
+                    println!("Unimplemented block: {}", block_name);
+                    c.set_position(c.position() + block_size as u64);
+                },
             }
-
-            abs_position += pos;
-
-            last = last.max(abs_position);
-
-            self.event_list_mut()
-                .add(&EventImpl::from_raw(abs_position, unit_no, event_kind, event_value).unwrap())
-                .unwrap();
         }
 
-        num_measures = num_measures
-            .max((last as f64 / self.beat_num() as f64 / self.beat_clock() as f64).ceil() as _);
+        let num_measures = self.num_measures().max(
+            (last_eve_pos as f64 / self.beat_num() as f64 / self.beat_clock() as f64).ceil() as _,
+        );
         self.set_num_measures(num_measures);
 
         Ok(())
@@ -103,20 +171,6 @@ impl PxToneServiceIO for RPxTone {
 
     fn write_file(&mut self, path: impl Into<std::path::PathBuf>) -> Result<Vec<u8>, Self::Error> {
         todo!()
-    }
-}
-
-fn seek_block(c: &mut Cursor<&[u8]>, block: &str) -> Result<(), RPxToneIOError> {
-    let p = c.position();
-    c.set_position(0);
-    let dat = c.get_ref();
-    let search = block.as_bytes();
-    if let Some(pos) = dat.windows(search.len()).position(|w| w == search) {
-        c.set_position(pos as u64 + 8);
-        Ok(())
-    } else {
-        c.set_position(p);
-        Err(RPxToneIOError::BlockNotFound(block.into()))
     }
 }
 
