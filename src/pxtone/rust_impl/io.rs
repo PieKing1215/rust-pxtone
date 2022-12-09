@@ -9,7 +9,9 @@ use crate::{
         io::PxToneServiceIO,
         service::PxTone,
     },
-    rust_impl::woice::{RPxToneVoicePCM, RPxToneWoice, RPxToneWoicePCM, RPxToneWoiceType},
+    rust_impl::woice::{
+        RPxToneVoicePCM, RPxToneVoicePCMError, RPxToneWoice, RPxToneWoicePCM, RPxToneWoiceType,
+    },
 };
 
 use super::service::RPxTone;
@@ -17,6 +19,7 @@ use super::service::RPxTone;
 pub struct RPxToneIO {}
 
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum RPxToneIOError {
     IncorrectHeader(String),
     BlockNotFound(String),
@@ -26,6 +29,10 @@ pub enum RPxToneIOError {
         actual: u32,
     },
     AntiOper,
+    InvalidPCMConfig {
+        bits_per_sample: u8,
+        channels: u8,
+    },
 }
 
 impl PxToneServiceIO for RPxTone {
@@ -160,7 +167,13 @@ impl PxToneServiceIO for RPxTone {
                                 voice_flags & 0x1 != 0,
                                 voice_flags & 0x2 != 0,
                                 voice_flags & 0x4 != 0,
-                            ),
+                            )
+                            .map_err(|e| match e {
+                                RPxToneVoicePCMError::InvalidPCMConfig {
+                                    bits_per_sample,
+                                    channels,
+                                } => RPxToneIOError::InvalidPCMConfig { bits_per_sample, channels },
+                            })?,
                         }),
                     });
                 },

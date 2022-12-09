@@ -54,14 +54,20 @@ pub struct RPxToneVoicePCM {
     pub(crate) channels: u8,
     pub(crate) samples_per_second: u32,
     pub(crate) bits_per_sample: u8,
-    pub(crate) data: Vec<u8>,
+    pub(crate) samples: Vec<f32>,
     pub(crate) sample_num: u32,
     pub(crate) ratio_to_a: f32,
 }
 
+#[derive(Debug)]
+#[non_exhaustive]
+pub enum RPxToneVoicePCMError {
+    InvalidPCMConfig { bits_per_sample: u8, channels: u8 },
+}
+
 impl RPxToneVoicePCM {
     #[allow(clippy::too_many_arguments)]
-    #[must_use]
+    #[allow(clippy::cast_precision_loss)]
     pub fn new(
         basic_key: i32,
         volume: i32,
@@ -74,13 +80,27 @@ impl RPxToneVoicePCM {
         flag_loop: bool,
         flag_smooth: bool,
         flag_beat_fit: bool,
-    ) -> Self {
+    ) -> Result<Self, RPxToneVoicePCMError> {
         let sample_num: u32 = data.len() as u32 / (bits_per_sample as u32 / 8 * channels as u32);
 
         // a woice with 200 samples at 44100Hz is A
         let ratio_to_a = sample_num as f32 / (200.0 * samples_per_second as f32 / 44100.0);
 
-        Self {
+        let samples = match (bits_per_sample, channels) {
+            (8, 1) => data
+                .into_iter()
+                .map(|s| s as f32 / u8::MAX as f32 - 0.5)
+                .collect(),
+            (16, 1) => data
+                .chunks_exact(2)
+                .map(|a| u16::from_ne_bytes([a[0], a[1]]) as f32 / u16::MAX as f32 - 0.5)
+                .collect(),
+            //TODO: (8, 2)
+            //TODO: (16, 2)
+            _ => return Err(RPxToneVoicePCMError::InvalidPCMConfig { bits_per_sample, channels }),
+        };
+
+        Ok(Self {
             basic_key,
             volume,
             pan,
@@ -91,10 +111,10 @@ impl RPxToneVoicePCM {
             channels,
             samples_per_second,
             bits_per_sample,
-            data,
+            samples,
             sample_num,
             ratio_to_a,
-        }
+        })
     }
 }
 
@@ -152,13 +172,11 @@ impl VoicePCM for RPxToneVoicePCM {
         let idx = cycle / self.ratio_to_a;
 
         if self.flag_loop {
-            self.data[(self.data.len() as f32 * idx as f32) as usize % self.data.len()] as f32
-                / 256.0
-                - 0.5
+            self.samples[(self.samples.len() as f32 * idx as f32) as usize % self.samples.len()]
         } else {
-            let i = (self.data.len() as f32 * idx as f32) as usize;
-            if i < self.data.len() {
-                self.data[i] as f32 / 256.0 - 0.5
+            let i = (self.samples.len() as f32 * idx as f32) as usize;
+            if i < self.samples.len() {
+                self.samples[i]
             } else {
                 0.0
             }
