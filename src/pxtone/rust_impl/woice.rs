@@ -76,11 +76,11 @@ impl RPxToneVoicePCM {
             volume,
             pan,
             tuning,
+            flags,
             channels,
             samples_per_second,
             bits_per_sample,
             data,
-            flags,
             sample_num,
         }
     }
@@ -133,17 +133,18 @@ impl VoicePCM for RPxToneVoicePCM {
         self.bits_per_sample
     }
 
+    #[allow(clippy::cast_precision_loss)]
     fn sample(&self, cycle: f32) -> f32 {
         let ratio_to_a =
             self.sample_num as f32 / (200.0 * self.samples_per_second as f32 / 44100.0);
         let idx = cycle / ratio_to_a;
         if self.flags & 0x01 > 0 {
             // loop flag
-            self.data[(self.data.len() as f64 * idx as f64) as usize % self.data.len()] as f32
+            self.data[(self.data.len() as f32 * idx as f32) as usize % self.data.len()] as f32
                 / 256.0
                 - 0.5
         } else {
-            let i = (self.data.len() as f64 * idx as f64) as usize;
+            let i = (self.data.len() as f32 * idx as f32) as usize;
             if i < self.data.len() {
                 self.data[i] as f32 / 256.0 - 0.5
             } else {
@@ -359,7 +360,7 @@ impl VoicePCM for RPxToneVoicePTN {
         self.bits_per_sample
     }
 
-    fn sample(&self, cycle: f32) -> f32 {
+    fn sample(&self, _cycle: f32) -> f32 {
         todo!()
     }
 }
@@ -558,7 +559,7 @@ impl VoicePCM for RPxToneVoiceOGGV {
         self.bits_per_sample
     }
 
-    fn sample(&self, cycle: f32) -> f32 {
+    fn sample(&self, _cycle: f32) -> f32 {
         todo!()
     }
 }

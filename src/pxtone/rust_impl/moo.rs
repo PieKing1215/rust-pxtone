@@ -1,6 +1,5 @@
 use std::{
     collections::HashMap,
-    f32::consts::PI,
     ops::{Deref, DerefMut},
 };
 
@@ -102,6 +101,8 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
         Ok(())
     }
 
+    #[allow(clippy::cast_precision_loss)]
+    #[allow(clippy::unreadable_literal)]
     fn sample(&mut self, buffer: &mut [i16]) -> Result<(), RPxToneMooError> {
         // println!("buf {}", buffer.len());
         let evs = self.pxtone.event_list.events.iter().collect::<Vec<_>>();
@@ -158,7 +159,8 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                 // println!("skip {skip}");
                 let mut v = 0;
 
-                for (unit, data) in &mut self.unit_data {
+                #[allow(clippy::for_kv_map)]
+                for (_unit, data) in &mut self.unit_data {
                     if let Some(on) = &mut data.on {
                         if clock_ticks > (on.start + on.length) as f32 {
                             data.on = None;
@@ -168,7 +170,7 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                         let note = data.key as f32;
 
                         // TODO: make this not witchcraft
-                        #[warn(clippy::excessive_precision)]
+                        #[allow(clippy::excessive_precision)]
                         let freq =
                             16.3515 * (1.0594630943592953_f32).powf((note - 13056.0) / 256.0);
 
@@ -222,18 +224,18 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
         todo!()
     }
 
-    fn set_unit_mute_enabled(&mut self, unit_mute: bool) -> Result<(), RPxToneMooError> {
+    fn set_unit_mute_enabled(&mut self, _unit_mute: bool) -> Result<(), RPxToneMooError> {
         todo!()
     }
 
-    fn set_loop(&mut self, should_loop: bool) -> Result<(), RPxToneMooError> {
+    fn set_loop(&mut self, _should_loop: bool) -> Result<(), RPxToneMooError> {
         todo!()
     }
 
     fn set_fade(
         &mut self,
-        fade: Option<crate::interface::moo::Fade>,
-        duration: std::time::Duration,
+        _fade: Option<crate::interface::moo::Fade>,
+        _duration: std::time::Duration,
     ) -> Result<(), RPxToneMooError> {
         todo!()
     }
@@ -246,13 +248,14 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
         todo!()
     }
 
+    #[allow(clippy::cast_precision_loss)]
     fn total_samples(&self) -> u32 {
         let total_beats = (self.beat_num() * self.num_measures()) as u32;
         println!("{} {} {}", self.sample_rate, total_beats, self.beat_tempo());
-        (self.sample_rate as f64 * 60.0 * total_beats as f64 / self.beat_tempo() as f64) as u32
+        (self.sample_rate as f32 * 60.0 * total_beats as f32 / self.beat_tempo() as f32) as u32
     }
 
-    fn set_master_volume(&mut self, volume: f32) -> Result<(), RPxToneMooError> {
+    fn set_master_volume(&mut self, _volume: f32) -> Result<(), RPxToneMooError> {
         todo!()
     }
 }

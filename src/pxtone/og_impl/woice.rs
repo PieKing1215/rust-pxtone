@@ -166,6 +166,7 @@ impl VoicePCM for pxtnVOICEUNIT {
         unsafe { (*self.p_pcm)._bps as u8 }
     }
 
+    #[allow(clippy::cast_precision_loss)]
     fn sample(&self, cycle: f32) -> f32 {
         let pcm = unsafe { &*self.p_pcm };
         let size = (pcm._smp_head + pcm._smp_body + pcm._smp_tail) * pcm._ch * pcm._bps / 8;

@@ -214,7 +214,7 @@ impl PxToneServiceIO for RPxTone {
         Ok(())
     }
 
-    fn write_file(&mut self, path: impl Into<std::path::PathBuf>) -> Result<Vec<u8>, Self::Error> {
+    fn write_file(&mut self, _path: impl Into<std::path::PathBuf>) -> Result<Vec<u8>, Self::Error> {
         todo!()
     }
 }
