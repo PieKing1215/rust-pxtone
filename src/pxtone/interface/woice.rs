@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, convert::Infallible, marker::PhantomData};
+use std::{borrow::Borrow, convert::Infallible, marker::PhantomData, fs::File, path::Path};
 
 use crate::pxtone::util::{BoxOrMut, BoxOrRef};
 
@@ -349,6 +349,14 @@ pub trait Woices {
 
 pub trait WoicesMut: Woices {
     fn iter_mut<'a>(&'a mut self) -> Box<dyn Iterator<Item = BoxOrMut<Self::W>> + 'a>;
+    
+    fn add_blank_ptv(&mut self) -> Option<BoxOrMut<<Self::W as Woice>::PTV>>;
+    fn add_blank_ptn(&mut self) -> Option<BoxOrMut<<Self::W as Woice>::PTN>>;
+    fn add_pcm_from_file<P: AsRef<Path>>(&mut self, path: P) -> Option<BoxOrMut<<Self::W as Woice>::PCM>>;
+    fn add_ptv_from_file<P: AsRef<Path>>(&mut self, path: P) -> Option<BoxOrMut<<Self::W as Woice>::PTV>>;
+    fn add_ptn_from_file<P: AsRef<Path>>(&mut self, path: P) -> Option<BoxOrMut<<Self::W as Woice>::PTN>>;
+    fn add_oggv_from_file<P: AsRef<Path>>(&mut self, path: P) -> Option<BoxOrMut<<Self::W as Woice>::OGGV>>;
+    fn remove(&mut self, index: usize) -> bool;
 }
 
 pub trait HasWoices {
