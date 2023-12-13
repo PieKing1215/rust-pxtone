@@ -177,7 +177,7 @@ impl VoicePCM for RPxToneVoicePCM {
     #[allow(clippy::inline_always)]
     #[inline(always)] // this function is very hot
     fn sample(&self, cycle: f32) -> f32 {
-        let idx = cycle / self.ratio_to_a;
+        let idx = cycle / self.ratio_to_a * self.tuning;
 
         if self.flag_loop {
             self.samples[(self.samples.len() as f32 * idx as f32) as usize % self.samples.len()]

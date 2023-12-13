@@ -7,7 +7,7 @@ use crate::{
     interface::{
         event::{
             BaseEvent, EventKey, EventOn, EventVelocity, EventVoiceNo, EventVolume, GenericEvent,
-            GenericEventKind,
+            GenericEventKind, EventTuning, TuningValue,
         },
         moo::{AsMoo, Moo},
         service::PxTone,
@@ -36,6 +36,7 @@ struct UnitData {
     volume: ZeroToOneF32,
     velocity: ZeroToOneF32,
     woice: u8,
+    tuning: TuningValue,
 }
 
 #[allow(clippy::derivable_impls)]
@@ -48,6 +49,7 @@ impl Default for UnitData {
             volume: ZeroToOneF32::new(104.0 / 128.0),
             velocity: ZeroToOneF32::new(104.0 / 128.0),
             woice: 0,
+            tuning: TuningValue::new(1.0),
         }
     }
 }
@@ -167,6 +169,9 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                         GenericEventKind::VoiceNo(voice) => {
                             self.unit_data.entry(e.unit_no()).or_default().woice = voice.voice_no();
                         },
+                        GenericEventKind::Tuning(voice) => {
+                            self.unit_data.entry(e.unit_no()).or_default().tuning = voice.tuning();
+                        },
                         _ => {},
                     }
                 }
@@ -194,7 +199,7 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                             let on_ticks = clock_ticks - on.start as f32;
                             let on_secs = on_ticks / ticks_per_sec;
 
-                            let cycle = on_secs * data.key_freq;
+                            let cycle = on_secs * data.key_freq * *data.tuning;
 
                             let woice = &self.pxtone.woices.get(data.woice as usize);
 
