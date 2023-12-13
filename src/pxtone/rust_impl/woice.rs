@@ -93,10 +93,18 @@ impl RPxToneVoicePCM {
                 .collect(),
             (16, 1) => data
                 .chunks_exact(2)
-                .map(|a| u16::from_ne_bytes([a[0], a[1]]) as f32 / u16::MAX as f32 - 0.5)
+                .map(|a| i16::from_ne_bytes([a[0], a[1]]) as f32 / i16::MAX as f32 / 2.0)
                 .collect(),
-            //TODO: (8, 2)
-            //TODO: (16, 2)
+            //TODO: real stereo
+            (8, 2) => data
+                .chunks_exact(2)
+                .map(|s| s[0] as f32 / u8::MAX as f32 - 0.5)
+                .collect(),
+            //TODO: real stereo
+            (16, 2) => data
+                .chunks_exact(4)
+                .map(|a| i16::from_ne_bytes([a[0], a[1]]) as f32 / i16::MAX as f32 / 2.0)
+                .collect(),
             _ => return Err(RPxToneVoicePCMError::InvalidPCMConfig { bits_per_sample, channels }),
         };
 
