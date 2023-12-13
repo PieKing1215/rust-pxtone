@@ -1,3 +1,7 @@
+use std::io::Cursor;
+
+use lewton::{inside_ogg::OggStreamReader, VorbisError};
+
 use crate::{
     interface::{
         service::InvalidText,
@@ -540,14 +544,95 @@ pub struct RPxToneVoiceOGGV {
     pub(crate) pan: i32,
     pub(crate) tuning: f32,
 
+    pub(crate) flag_loop: bool,
+    pub(crate) flag_smooth: bool,
+    pub(crate) flag_beat_fit: bool,
+
     pub(crate) channels: u8,
     pub(crate) samples_per_second: u32,
-    pub(crate) bits_per_sample: u8,
+    pub(crate) samples: Vec<f32>,
+    pub(crate) sample_num: u32,
+    pub(crate) ratio_to_a: f32,
 
     pub(crate) ogg_channels: u8,
     pub(crate) ogg_samples_per_second: u32,
     pub(crate) ogg_sample_num: u32,
     pub(crate) ogg_data: Vec<u8>,
+}
+
+#[derive(Debug)]
+#[non_exhaustive]
+pub enum RPxToneVoiceOGGVError {
+    InvalidOGGVConfig { samples_per_second: u8, channels: u8 },
+    VorbisError(VorbisError),
+}
+
+impl RPxToneVoiceOGGV {
+    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::cast_precision_loss)]
+    pub fn new(
+        basic_key: i32,
+        volume: i32,
+        pan: i32,
+        tuning: f32,
+        channels: u8,
+        samples_per_second: u32,
+        sample_num: u32,
+        data: Vec<u8>,
+        flag_loop: bool,
+        flag_smooth: bool,
+        flag_beat_fit: bool,
+    ) -> Result<Self, RPxToneVoiceOGGVError> {
+        let ogg_data = data;
+
+        // a woice with 200 samples at 44100Hz is A
+        let ratio_to_a = sample_num as f32 / (200.0 * samples_per_second as f32 / 44100.0);
+
+        let mut ogg_reader = OggStreamReader::new(Cursor::new(&ogg_data))
+            .map_err(RPxToneVoiceOGGVError::VorbisError)?;
+        let ogg_samples_per_second = ogg_reader.ident_hdr.audio_sample_rate;
+        let ogg_channels = ogg_reader.ident_hdr.audio_channels;
+
+        let mut samples = vec![];
+
+        while let Some(raw_samples) = ogg_reader.read_dec_packet_itl().map_err(RPxToneVoiceOGGVError::VorbisError)? {
+            if ogg_channels == 2 {
+                //TODO: real stereo
+                samples.extend(
+                    raw_samples
+                        .chunks_exact(2)
+                        .map(|a| a[0] as f32 / i16::MAX as f32 / 2.0)
+                );
+            } else {
+                samples.extend(
+                    raw_samples
+                        .into_iter()
+                        .map(|a| a as f32 / i16::MAX as f32 / 2.0)
+                );
+            }
+        }
+
+        println!("OGGV {}", samples.len());
+
+        Ok(Self {
+            basic_key,
+            volume,
+            pan,
+            tuning,
+            flag_loop,
+            flag_smooth,
+            flag_beat_fit,
+            channels,
+            samples_per_second,
+            samples,
+            sample_num,
+            ratio_to_a,
+            ogg_channels,
+            ogg_samples_per_second,
+            ogg_sample_num: sample_num,
+            ogg_data,
+        })
+    }
 }
 
 impl Voice for RPxToneVoiceOGGV {
@@ -594,11 +679,25 @@ impl VoicePCM for RPxToneVoiceOGGV {
     }
 
     fn bits_per_sample(&self) -> u8 {
-        self.bits_per_sample
+        8 // TODO: does ogg actually have this?
     }
 
-    fn sample(&self, _cycle: f32) -> f32 {
-        todo!()
+    #[allow(clippy::cast_precision_loss)]
+    #[allow(clippy::inline_always)]
+    #[inline(always)] // this function is very hot
+    fn sample(&self, cycle: f32) -> f32 {
+        let idx = cycle / self.ratio_to_a * self.tuning;
+
+        if self.flag_loop {
+            self.samples[(self.samples.len() as f32 * idx as f32) as usize % self.samples.len()]
+        } else {
+            let i = (self.samples.len() as f32 * idx as f32) as usize;
+            if i < self.samples.len() {
+                self.samples[i]
+            } else {
+                0.0
+            }
+        }
     }
 }
 

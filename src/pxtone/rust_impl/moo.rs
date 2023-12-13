@@ -107,6 +107,7 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
 
     #[allow(clippy::cast_precision_loss)]
     #[allow(clippy::unreadable_literal)]
+    #[allow(clippy::too_many_lines)]
     fn sample(&mut self, buffer: &mut [i16]) -> Result<(), RPxToneMooError> {
         profiling::scope!("sample");
         // println!("buf {}", buffer.len());
@@ -218,6 +219,18 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                                         v += (val * *data.volume * *data.velocity * i16::MAX as f32)
                                             as i16;
                                     },
+                                    WoiceType::OGGV(oggv) => {
+                                        let mut val = oggv.voice.sample(cycle);
+
+                                        if oggv.voice.flag_smooth
+                                            && cycle * 44100.0 < smooth_smps as f32
+                                        {
+                                            val *= (cycle * 44100.0) / smooth_smps as f32;
+                                        }
+
+                                        v += (val * *data.volume * *data.velocity * i16::MAX as f32)
+                                            as i16;
+                                    }
                                     _ => {},
                                 };
                             }

@@ -14,7 +14,7 @@ use crate::{
     },
 };
 
-use super::service::RPxTone;
+use super::{service::RPxTone, woice::{RPxToneWoiceOGGV, RPxToneVoiceOGGV, RPxToneVoiceOGGVError}};
 
 pub struct RPxToneIO {}
 
@@ -33,6 +33,11 @@ pub enum RPxToneIOError {
         bits_per_sample: u8,
         channels: u8,
     },
+    InvalidOGGVConfig {
+        samples_per_second: u8,
+        channels: u8,
+    },
+    VorbisError(lewton::VorbisError),
 }
 
 impl PxToneServiceIO for RPxTone {
@@ -173,6 +178,49 @@ impl PxToneServiceIO for RPxTone {
                                     bits_per_sample,
                                     channels,
                                 } => RPxToneIOError::InvalidPCMConfig { bits_per_sample, channels },
+                            })?,
+                        }),
+                    });
+                },
+                b"mateOGGV" => {
+                    let _xxx: u16 = c.read_u16::<LittleEndian>().unwrap();
+                    let basic_key: u16 = c.read_u16::<LittleEndian>().unwrap();
+                    let voice_flags: u32 = c.read_u32::<LittleEndian>().unwrap();
+                    let tuning: f32 = c.read_f32::<LittleEndian>().unwrap();
+
+                    let channels = c.read_u32::<LittleEndian>().unwrap();
+                    let samples_per_second = c.read_u32::<LittleEndian>().unwrap();
+                    let sample_num = c.read_u32::<LittleEndian>().unwrap();
+                    let data_size = c.read_u32::<LittleEndian>().unwrap();
+
+                    assert_eq!(voice_flags & 0xffff_fff8, 0); // only flags 0x1, 0x2, and 0x4 are used
+
+                    // println!("PCM {_x3x_unit_no} {basic_key} {voice_flags} {channels} {bits_per_sample} {samples_per_second} {tuning} {data_size}");
+
+                    let mut data_buf = vec![0_u8; data_size as _];
+                    c.read_exact(&mut data_buf).unwrap();
+                    
+                    self.woices.push(RPxToneWoice {
+                        name: String::new(),
+                        woice_type: RPxToneWoiceType::OGGV(RPxToneWoiceOGGV {
+                            voice: RPxToneVoiceOGGV::new(
+                                basic_key as _,
+                                128,
+                                64,
+                                tuning,
+                                channels as _,
+                                samples_per_second,
+                                sample_num as _,
+                                data_buf,
+                                voice_flags & 0x1 != 0,
+                                voice_flags & 0x2 != 0,
+                                voice_flags & 0x4 != 0,
+                            ).map_err(|e| match e {
+                                RPxToneVoiceOGGVError::InvalidOGGVConfig {
+                                    samples_per_second,
+                                    channels,
+                                } => RPxToneIOError::InvalidOGGVConfig { samples_per_second, channels },
+                                RPxToneVoiceOGGVError::VorbisError(e) => RPxToneIOError::VorbisError(e),
                             })?,
                         }),
                     });
