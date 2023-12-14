@@ -95,6 +95,7 @@ impl GenericEvent for RPxToneEvent {
             EventKind::GroupNo => GenericEventKind::GroupNo(BoxOrRef::Ref(self)),
             EventKind::Tuning => GenericEventKind::Tuning(BoxOrRef::Ref(self)),
             EventKind::PanTime => GenericEventKind::PanTime(BoxOrRef::Ref(self)),
+            EventKind::Portament => GenericEventKind::Porta(BoxOrRef::Ref(self)),
             _ => GenericEventKind::Invalid,
         }
     }

@@ -7,7 +7,7 @@ use crate::{
     interface::{
         event::{
             BaseEvent, EventKey, EventOn, EventVelocity, EventVoiceNo, EventVolume, GenericEvent,
-            GenericEventKind, EventTuning, TuningValue,
+            GenericEventKind, EventTuning, TuningValue, EventPorta,
         },
         moo::{AsMoo, Moo},
         service::PxTone,
@@ -31,25 +31,36 @@ pub struct RPxToneMoo<'a> {
 
 struct UnitData {
     on: Option<UnitOnData>,
-    key: i32,
-    key_freq: f32,
+    /// current output key value (including porta)
+    key_now: i32,
+    /// key at the start of the note (porta)
+    key_start: i32,
+    /// offset from key_start to end value (porta)
+    key_margin: i32,
     volume: ZeroToOneF32,
     velocity: ZeroToOneF32,
     woice: u8,
     tuning: TuningValue,
+    porta: u32,
+    porta_start: u32,
 }
+
+const DEFAULT_KEY: i32 = 24576;
 
 #[allow(clippy::derivable_impls)]
 impl Default for UnitData {
     fn default() -> Self {
         Self {
             on: None,
-            key: 0,
-            key_freq: 0.0,
+            key_now: DEFAULT_KEY,
+            key_start: DEFAULT_KEY,
+            key_margin: 0,
             volume: ZeroToOneF32::new(104.0 / 128.0),
             velocity: ZeroToOneF32::new(104.0 / 128.0),
             woice: 0,
             tuning: TuningValue::new(1.0),
+            porta: 0,
+            porta_start: 0,
         }
     }
 }
@@ -57,6 +68,7 @@ impl Default for UnitData {
 struct UnitOnData {
     start: u32,
     length: u32,
+    cycle: f32,
 }
 
 impl Deref for RPxToneMoo<'_> {
@@ -141,24 +153,20 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
 
                     match e.kind() {
                         GenericEventKind::On(on) => {
-                            self.unit_data.entry(e.unit_no()).or_default().on =
-                                Some(UnitOnData { start: on.clock(), length: on.length() });
+                            let data = self.unit_data.entry(e.unit_no()).or_default();
+                            data.key_now = data.key_start + data.key_margin;
+                            data.key_start = data.key_now;
+                            data.key_margin = 0;
+                            data.on = Some(UnitOnData { start: on.clock(), length: on.length(), cycle: 0.0 });
                         },
                         GenericEventKind::Key(key) => {
                             let key_v = key.key();
-                            self.unit_data.entry(e.unit_no()).or_default().key = key_v;
 
-                            // TODO: make this not witchcraft
-                            // 16.3515 is C0 in Hz
-                            // 13056 is the "note unit" for C0
-                            // 256 "note units" per real semitone
-                            // 1.05946^x == 2^(x/12)
-                            // 1.05946 == 2^(1/12)
-                            #[allow(clippy::excessive_precision)]
-                            let freq =
-                                16.3515 * (1.0594630943592953_f32).powi((key_v - 13056) / 256);
+                            let data = self.unit_data.entry(e.unit_no()).or_default();
 
-                            self.unit_data.entry(e.unit_no()).or_default().key_freq = freq;
+                            data.key_start = data.key_now;
+                            data.key_margin = key_v - data.key_start;
+                            data.porta_start = e.clock();
                         },
                         GenericEventKind::Velocity(vel) => {
                             self.unit_data.entry(e.unit_no()).or_default().velocity =
@@ -168,10 +176,14 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                             self.unit_data.entry(e.unit_no()).or_default().volume = vol.volume();
                         },
                         GenericEventKind::VoiceNo(voice) => {
+                            // TODO: I think voice no is supposed to reset porta
                             self.unit_data.entry(e.unit_no()).or_default().woice = voice.voice_no();
                         },
-                        GenericEventKind::Tuning(voice) => {
-                            self.unit_data.entry(e.unit_no()).or_default().tuning = voice.tuning();
+                        GenericEventKind::Tuning(tuning) => {
+                            self.unit_data.entry(e.unit_no()).or_default().tuning = tuning.tuning();
+                        },
+                        GenericEventKind::Porta(porta) => {
+                            self.unit_data.entry(e.unit_no()).or_default().porta = porta.porta();
                         },
                         _ => {},
                     }
@@ -184,6 +196,7 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                     profiling::scope!("one sample");
                     let clock_secs =
                         (self.smp as f32 / self.channels as f32) / self.sample_rate as f32;
+                    let delta = (1.0 / self.channels as f32) / self.sample_rate as f32;
                     let clock_ticks = clock_secs * ticks_per_sec;
 
                     // println!("skip {skip}");
@@ -197,10 +210,31 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                                 continue;
                             }
 
-                            let on_ticks = clock_ticks - on.start as f32;
-                            let on_secs = on_ticks / ticks_per_sec;
+                            // let on_ticks = clock_ticks - on.start as f32;
+                            // let on_secs = on_ticks / ticks_per_sec;
 
-                            let cycle = on_secs * data.key_freq * *data.tuning;
+                            // porta
+                            if data.porta > 0 && data.key_margin != 0 {
+                                let thru = (clock_ticks - data.porta_start as f32) / data.porta as f32;
+                                let thru = thru.clamp(0.0, 1.0);
+                                data.key_now = (data.key_start as f32 + data.key_margin as f32 * thru) as _;
+                            } else {
+                                data.key_now = data.key_start + data.key_margin;
+                            }
+
+                            // TODO: make this not witchcraft
+                            // 16.3515 is C0 in Hz
+                            // 13056 is the "note unit" for C0
+                            // 256 "note units" per real semitone
+                            // 1.05946^x == 2^(x/12)
+                            // 1.05946 == 2^(1/12)
+                            #[allow(clippy::excessive_precision)]
+                            let key_freq =
+                                16.3515 * (1.0594630943592953_f32).powf((data.key_now as f32 - 13056.0) / 256.0);
+
+                            on.cycle += delta * key_freq * *data.tuning;
+
+                            // println!("{delta} {key_freq} {} {} {}", *data.tuning, delta * key_freq * *data.tuning, data.cycle);
 
                             let woice = &self.pxtone.woices.get(data.woice as usize);
 
@@ -208,24 +242,24 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                                 #[allow(clippy::single_match)]
                                 match woice.woice_type() {
                                     WoiceType::PCM(pcm) => {
-                                        let mut val = pcm.voice.sample(cycle);
+                                        let mut val = pcm.voice.sample(on.cycle);
 
                                         if pcm.voice.flag_smooth
-                                            && cycle * 44100.0 < smooth_smps as f32
+                                            && on.cycle * 44100.0 < smooth_smps as f32
                                         {
-                                            val *= (cycle * 44100.0) / smooth_smps as f32;
+                                            val *= (on.cycle * 44100.0) / smooth_smps as f32;
                                         }
 
                                         v += (val * *data.volume * *data.velocity * i16::MAX as f32)
                                             as i16;
                                     },
                                     WoiceType::OGGV(oggv) => {
-                                        let mut val = oggv.voice.sample(cycle);
+                                        let mut val = oggv.voice.sample(on.cycle);
 
                                         if oggv.voice.flag_smooth
-                                            && cycle * 44100.0 < smooth_smps as f32
+                                            && on.cycle * 44100.0 < smooth_smps as f32
                                         {
-                                            val *= (cycle * 44100.0) / smooth_smps as f32;
+                                            val *= (on.cycle * 44100.0) / smooth_smps as f32;
                                         }
 
                                         v += (val * *data.volume * *data.velocity * i16::MAX as f32)
