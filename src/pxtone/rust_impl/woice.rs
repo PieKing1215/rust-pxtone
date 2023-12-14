@@ -89,6 +89,8 @@ impl RPxToneVoicePCM {
 
         // a woice with 200 samples at 44100Hz is A
         let ratio_to_a = sample_num as f32 / (200.0 * samples_per_second as f32 / 44100.0);
+        let semitone_key_offset = (17664 - basic_key) as f32 / 256.0;
+        let ratio_to_a = ratio_to_a / 2_f32.powf(semitone_key_offset / 12.0);
 
         let samples = match (bits_per_sample, channels) {
             (8, 1) => data
@@ -587,6 +589,8 @@ impl RPxToneVoiceOGGV {
 
         // a woice with 200 samples at 44100Hz is A
         let ratio_to_a = sample_num as f32 / (200.0 * samples_per_second as f32 / 44100.0);
+        let semitone_key_offset = (17664 - basic_key) as f32 / 256.0;
+        let ratio_to_a = ratio_to_a / 2_f32.powf(semitone_key_offset / 12.0);
 
         let mut ogg_reader = OggStreamReader::new(Cursor::new(&ogg_data))
             .map_err(RPxToneVoiceOGGVError::VorbisError)?;
@@ -611,8 +615,6 @@ impl RPxToneVoiceOGGV {
                 );
             }
         }
-
-        println!("OGGV {}", samples.len());
 
         Ok(Self {
             basic_key,
