@@ -25,6 +25,7 @@ pub struct RPxToneMoo<'a> {
 
     smp: u32,
     last_clock: f32,
+    last_sample_clock_secs: f32,
 
     unit_data: HashMap<u8, UnitData>,
 }
@@ -68,7 +69,9 @@ impl Default for UnitData {
 struct UnitOnData {
     start: u32,
     length: u32,
-    cycle: f32,
+    /// Needs to be double precision to prevent artifacts
+    /// TODO: see if this impacts performance
+    cycle: f64,
 }
 
 impl Deref for RPxToneMoo<'_> {
@@ -99,6 +102,7 @@ impl AsMoo for RPxTone {
 
             smp: 0,
             last_clock: 0.0,
+            last_sample_clock_secs: 0.0,
             unit_data: HashMap::new(),
         }))
     }
@@ -196,7 +200,7 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                     profiling::scope!("one sample");
                     let clock_secs =
                         (self.smp as f32 / self.channels as f32) / self.sample_rate as f32;
-                    let delta = (1.0 / self.channels as f32) / self.sample_rate as f32;
+                    let delta = clock_secs - self.last_sample_clock_secs;
                     let clock_ticks = clock_secs * ticks_per_sec;
 
                     // println!("skip {skip}");
@@ -232,7 +236,9 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                             let key_freq =
                                 16.3515 * (1.0594630943592953_f32).powf((data.key_now as f32 - 13056.0) / 256.0);
 
-                            on.cycle += delta * key_freq * *data.tuning;
+                            on.cycle += (delta * key_freq * *data.tuning) as f64;
+                            // on.cycle = (on_secs * key_freq * *data.tuning) as f64;
+                            let cycle = on.cycle as f32;
 
                             // println!("{delta} {key_freq} {} {} {}", *data.tuning, delta * key_freq * *data.tuning, data.cycle);
 
@@ -242,24 +248,24 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                                 #[allow(clippy::single_match)]
                                 match woice.woice_type() {
                                     WoiceType::PCM(pcm) => {
-                                        let mut val = pcm.voice.sample(on.cycle);
+                                        let mut val = pcm.voice.sample(cycle);
 
                                         if pcm.voice.flag_smooth
-                                            && on.cycle * 44100.0 < smooth_smps as f32
+                                            && cycle * 44100.0 < smooth_smps as f32
                                         {
-                                            val *= (on.cycle * 44100.0) / smooth_smps as f32;
+                                            val *= (cycle * 44100.0) / smooth_smps as f32;
                                         }
 
                                         v += (val * *data.volume * *data.velocity * i16::MAX as f32)
                                             as i16;
                                     },
                                     WoiceType::OGGV(oggv) => {
-                                        let mut val = oggv.voice.sample(on.cycle);
+                                        let mut val = oggv.voice.sample(cycle);
 
                                         if oggv.voice.flag_smooth
-                                            && on.cycle * 44100.0 < smooth_smps as f32
+                                            && cycle * 44100.0 < smooth_smps as f32
                                         {
-                                            val *= (on.cycle * 44100.0) / smooth_smps as f32;
+                                            val *= (cycle * 44100.0) / smooth_smps as f32;
                                         }
 
                                         v += (val * *data.volume * *data.velocity * i16::MAX as f32)
@@ -274,6 +280,7 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                     // println!("{v} {l}");
                     *bsmp = v;
                     self.smp += 1;
+                    self.last_sample_clock_secs = clock_secs;
                 }
             }
 
