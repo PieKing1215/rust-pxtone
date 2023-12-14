@@ -14,7 +14,7 @@ use crate::{
     },
 };
 
-use super::{service::RPxTone, woice::{RPxToneWoiceOGGV, RPxToneVoiceOGGV, RPxToneVoiceOGGVError}};
+use super::{service::RPxTone, woice::{RPxToneWoiceOGGV, RPxToneVoiceOGGV, RPxToneVoiceOGGVError, RPxToneWoicePTV}};
 
 pub struct RPxToneIO {}
 
@@ -225,14 +225,35 @@ impl PxToneServiceIO for RPxTone {
                         }),
                     });
                 },
-                // b"matePTV " => {
-                //     let _x3x_unit_no = c.read_u16::<LittleEndian>().unwrap();
-                //     let _rrr = c.read_u16::<LittleEndian>().unwrap();
-                //     let tuning = c.read_f32::<LittleEndian>().unwrap();
-                //     let _size = c.read_u32::<LittleEndian>().unwrap();
+                b"matePTV " => {
+                    // let _x3x_unit_no = c.read_u16::<LittleEndian>().unwrap();
+                    // let _rrr = c.read_u16::<LittleEndian>().unwrap();
+                    // let tuning = c.read_f32::<LittleEndian>().unwrap();
+                    // let _size = c.read_u32::<LittleEndian>().unwrap();
 
-                //     println!("PCM {_x3x_unit_no} {_rrr} {tuning} {_size}");
-                // },
+                    // println!("PCM {_x3x_unit_no} {_rrr} {tuning} {_size}");
+
+                    self.woices.push(RPxToneWoice {
+                        name: String::new(),
+                        woice_type: RPxToneWoiceType::PTV(RPxToneWoicePTV {
+                            voices: vec![],
+                        }),
+                    });
+
+                    // TODO: placeholder
+                    c.set_position(c.position() + block_size as u64);
+                },
+                b"matePTN " => {
+                    self.woices.push(RPxToneWoice {
+                        name: String::new(),
+                        woice_type: RPxToneWoiceType::PTV(RPxToneWoicePTV {
+                            voices: vec![],
+                        }),
+                    });
+
+                    // TODO: placeholder
+                    c.set_position(c.position() + block_size as u64);
+                },
                 b"num UNIT" => {
                     if block_size != 4 {
                         return Err(RPxToneIOError::IncorrectBlockSize {
