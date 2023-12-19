@@ -186,9 +186,9 @@ impl VoicePCM for RPxToneVoicePCM {
         let idx = cycle / self.ratio_to_a * self.tuning;
 
         if self.flag_loop {
-            self.samples[(self.samples.len() as f32 * idx as f32) as usize % self.samples.len()]
+            self.samples[(self.samples.len() as f32 * idx) as usize % self.samples.len()]
         } else {
-            let i = (self.samples.len() as f32 * idx as f32) as usize;
+            let i = (self.samples.len() as f32 * idx) as usize;
             if i < self.samples.len() {
                 self.samples[i]
             } else {
@@ -323,7 +323,7 @@ impl VoicePCM for RPxToneVoicePTV {
     fn sample(&self, cycle: f32) -> f32 {
         let idx = cycle / self.ratio_to_a * self.tuning;
 
-        self.samples[(self.samples.len() as f32 * idx as f32) as usize % self.samples.len()]
+        self.samples[(self.samples.len() as f32 * idx) as usize % self.samples.len()]
     }
 }
 
@@ -808,9 +808,9 @@ impl VoicePCM for RPxToneVoiceOGGV {
         let idx = cycle / self.ratio_to_a * self.tuning;
 
         if self.flag_loop {
-            self.samples[(self.samples.len() as f32 * idx as f32) as usize % self.samples.len()]
+            self.samples[(self.samples.len() as f32 * idx) as usize % self.samples.len()]
         } else {
-            let i = (self.samples.len() as f32 * idx as f32) as usize;
+            let i = (self.samples.len() as f32 * idx) as usize;
             if i < self.samples.len() {
                 self.samples[i]
             } else {

@@ -403,7 +403,7 @@ impl PxToneServiceIO for RPxTone {
                     return Err(RPxToneIOError::AntiOper);
                 },
                 _ => {
-                    println!("Unimplemented block: {}", block_name);
+                    println!("Unimplemented block: {block_name}");
                     c.set_position(c.position() + block_size as u64);
                 },
             }

@@ -341,7 +341,7 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
     fn total_samples(&self) -> u32 {
         let total_beats = (self.beat_num() * self.num_measures()) as u32;
         println!("{} {} {}", self.sample_rate, total_beats, self.beat_tempo());
-        (self.sample_rate as f32 * 60.0 * total_beats as f32 / self.beat_tempo() as f32) as u32
+        (self.sample_rate as f32 * 60.0 * total_beats as f32 / self.beat_tempo()) as u32
     }
 
     fn set_master_volume(&mut self, volume: f32) -> Result<(), RPxToneMooError> {
