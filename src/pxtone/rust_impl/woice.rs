@@ -1,4 +1,4 @@
-use std::io::Cursor;
+use std::{io::Cursor, f32::consts::PI};
 
 use lewton::{inside_ogg::OggStreamReader, VorbisError};
 
@@ -215,6 +215,42 @@ pub struct RPxToneVoicePTV {
     pub(crate) tuning: f32,
 
     pub(crate) wave: RPxTonePTVWaveType,
+
+    pub(crate) samples: Vec<f32>,
+    pub(crate) ratio_to_a: f32,
+}
+
+impl RPxToneVoicePTV {
+    #[must_use]
+    pub fn new(basic_key: i32, volume: i32, pan: i32, tuning: f32, wave: RPxTonePTVWaveType) -> Self {
+
+        let sample_num = 400;
+        let channels = 2;
+        let samples_per_second = 44100;
+        let bits_per_sample = 16;
+
+        let ratio_to_a = sample_num as f32 / (200.0 * samples_per_second as f32 / 44100.0);
+        let semitone_key_offset = (17664 - basic_key) as f32 / 256.0;
+        let ratio_to_a = ratio_to_a / 2_f32.powf(semitone_key_offset / 12.0);
+
+        // TODO: stereo
+        let samples = (0..sample_num).map(|i| {
+            match &wave {
+                RPxTonePTVWaveType::Coordinate(c) => c.sample(i as f32 / sample_num as f32) * volume as f32 / 128.0 / 128.0 / 2.0,
+                RPxTonePTVWaveType::Overtone(o) => o.sample(i as f32 / sample_num as f32) * volume as f32 / 128.0 / 2.0,
+            }
+        }).collect();
+
+        Self {
+            basic_key,
+            volume,
+            pan,
+            tuning,
+            wave,
+            samples,
+            ratio_to_a,
+        }
+    }
 }
 
 pub enum RPxTonePTVWaveType {
@@ -268,9 +304,82 @@ impl VoicePTV for RPxToneVoicePTV {
     }
 }
 
+impl VoicePCM for RPxToneVoicePTV {
+    fn channels(&self) -> u8 {
+        2
+    }
+
+    fn samples_per_second(&self) -> u32 {
+        44100
+    }
+
+    fn bits_per_sample(&self) -> u8 {
+        16
+    }
+
+    #[allow(clippy::cast_precision_loss)]
+    #[allow(clippy::inline_always)]
+    #[inline(always)] // this function is very hot
+    fn sample(&self, cycle: f32) -> f32 {
+        let idx = cycle / self.ratio_to_a * self.tuning;
+
+        self.samples[(self.samples.len() as f32 * idx as f32) as usize % self.samples.len()]
+    }
+}
+
 pub struct RPxTonePTVCoordinateWave {
     pub(crate) resolution: u32,
     pub(crate) points: Vec<RPxTonePTVCoordinatePoint>,
+}
+
+impl RPxTonePTVCoordinateWave {
+    pub fn sample(&self, thru: f32) -> f32 {
+        let i = (self.resolution as f32 * thru) as u32;
+
+        let mut out = 0.0;
+
+        let mut c = 0;
+        while c < self.points.len() {
+            if self.points[c].x > i {
+                break;
+            }
+            c += 1;
+        }
+
+        let mut x1 = 0;
+        let mut y1 = 0;
+        let mut x2 = 0;
+        let mut y2 = 0;
+
+        if c == self.points.len() {
+            x1 = self.points[c - 1].x;
+            y1 = self.points[c - 1].y;
+            x2 = self.resolution;
+            y2 = self.points[0].y;
+        } else if c > 0 {
+            x1 = self.points[c - 1].x;
+            y1 = self.points[c - 1].y;
+            x2 = self.points[c].x;
+            y2 = self.points[c].y;
+        } else {
+            x1 = self.points[0].x;
+            y1 = self.points[0].y;
+            x2 = self.points[0].x;
+            y2 = self.points[0].y;
+        }
+
+        let w = x2 - x1;
+        let i = i - x1;
+        let h = y2 - y1;
+
+        if i > 0 {
+            out = y1 as f32 + h as f32 * i as f32 / w as f32;
+        } else {
+            out = y1 as f32;
+        }
+
+        out
+    }
 }
 
 impl PTVCoordinateWave for RPxTonePTVCoordinateWave {
@@ -302,6 +411,17 @@ impl PTVCoordinateWavePoint for RPxTonePTVCoordinatePoint {
 
 pub struct RPxTonePTVOvertoneWave {
     pub(crate) tones: Vec<RPxTonePTVOvertoneWaveTone>,
+}
+
+impl RPxTonePTVOvertoneWave {
+    pub fn sample(&self, thru: f32) -> f32 {
+        let mut out = 0.0;
+        for t in &self.tones {
+            let sss = 2.0 * PI * t.frequency as f32 * thru;
+            out += sss.sin() * t.amplitude as f32 / t.frequency as f32 / 128.0;
+        }
+        out
+    }
 }
 
 impl PTVOvertoneWave for RPxTonePTVOvertoneWave {

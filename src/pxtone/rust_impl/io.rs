@@ -10,11 +10,11 @@ use crate::{
         service::PxTone,
     },
     rust_impl::woice::{
-        RPxToneVoicePCM, RPxToneVoicePCMError, RPxToneWoice, RPxToneWoicePCM, RPxToneWoiceType,
+        RPxToneVoicePCM, RPxToneVoicePCMError, RPxToneWoice, RPxToneWoicePCM, RPxToneWoiceType, RPxToneVoicePTV, RPxTonePTVWaveType, RPxTonePTVCoordinateWave, RPxTonePTVCoordinatePoint, RPxTonePTVOvertoneWave, RPxTonePTVOvertoneWaveTone,
     },
 };
 
-use super::{service::RPxTone, woice::{RPxToneWoiceOGGV, RPxToneVoiceOGGV, RPxToneVoiceOGGVError, RPxToneWoicePTV}};
+use super::{service::RPxTone, woice::{RPxToneWoiceOGGV, RPxToneVoiceOGGV, RPxToneVoiceOGGVError, RPxToneWoicePTV}, event::RPxToneEventList};
 
 pub struct RPxToneIO {}
 
@@ -228,23 +228,139 @@ impl PxToneServiceIO for RPxTone {
                         }),
                     });
                 },
+                #[allow(clippy::unreadable_literal)]
                 b"matePTV " => {
-                    // let _x3x_unit_no = c.read_u16::<LittleEndian>().unwrap();
-                    // let _rrr = c.read_u16::<LittleEndian>().unwrap();
-                    // let tuning = c.read_f32::<LittleEndian>().unwrap();
-                    // let _size = c.read_u32::<LittleEndian>().unwrap();
+                    let _x3x_unit_no = c.read_u16::<LittleEndian>().unwrap();
+                    let rrr = c.read_u16::<LittleEndian>().unwrap();
+                    let tuning = c.read_f32::<LittleEndian>().unwrap();
+                    let tuning = f32::from_le_bytes(tuning.to_le_bytes());
+                    let _size = c.read_u32::<LittleEndian>().unwrap();
 
-                    // println!("PCM {_x3x_unit_no} {_rrr} {tuning} {_size}");
+                    assert_eq!(rrr, 0);
+
+                    let mut code = [0_u8; 8];
+                    c.read_exact(&mut code).unwrap();
+                    assert_eq!(&code, b"PTVOICE-");
+
+                    let version = c.read_u32::<LittleEndian>().unwrap();
+                    assert!(version <= 20060111);
+
+                    let _total = c.read_u32::<LittleEndian>().unwrap();
+
+                    let _x3x_basic_key = v_r(&mut c).unwrap();
+
+                    let work1 = v_r(&mut c).unwrap();
+                    let work2 = v_r(&mut c).unwrap();
+                    assert!(work1 == 0 && work2 == 0);
+
+                    let voice_num = v_r(&mut c).unwrap();
+
+                    let voices = (0..voice_num).filter_map(|_| {
+                        let basic_key = v_r(&mut c).unwrap();
+                        let volume = v_r(&mut c).unwrap();
+                        let pan = v_r(&mut c).unwrap();
+                        let tuning = v_r(&mut c).unwrap();
+                        let tuning = f32::from_le_bytes(tuning.to_le_bytes());
+                        let voice_flags = v_r(&mut c).unwrap();
+                        let data_flags = v_r(&mut c).unwrap();
+
+                        println!("{basic_key}, {volume}, {pan}, {tuning}, {voice_flags}, {data_flags}");
+
+                        assert_eq!(voice_flags & 0xffff_fff8, 0); // only flags 0x1, 0x2, and 0x4 are used
+                        assert_eq!(data_flags & 0xffff_fffc, 0); // only flags 0x1 and 0x2 are used
+
+                        if data_flags & 0x1 != 0 {
+                            // wave
+
+                            let wave_type = v_r(&mut c).unwrap();
+
+                            println!("wave_type {wave_type}");
+
+                            let wave = match wave_type {
+                                0 => {
+                                    let num_points = v_r(&mut c).unwrap();
+                                    let resolution = v_r(&mut c).unwrap();
+
+                                    let points = (0..num_points).map(|_| {
+                                        let x = c.read_u8().unwrap();
+                                        let y = c.read_i8().unwrap();
+
+                                        RPxTonePTVCoordinatePoint {
+                                            x: x as _,
+                                            y: y as _,
+                                        }
+                                    }).collect();
+
+                                    RPxTonePTVWaveType::Coordinate(RPxTonePTVCoordinateWave {
+                                        resolution,
+                                        points,
+                                    })
+                                },
+                                1 => {
+                                    let num_tones = v_r(&mut c).unwrap();
+
+                                    println!("num_tones {num_tones}");
+
+                                    let tones = (0..num_tones).map(|_| {
+                                        let x = v_r(&mut c).unwrap();
+                                        let y = v_r(&mut c).unwrap();
+
+                                        println!("{x} {y}");
+
+                                        RPxTonePTVOvertoneWaveTone {
+                                            frequency: x as _,
+                                            amplitude: y as _,
+                                        }
+                                    }).collect();
+
+                                    RPxTonePTVWaveType::Overtone(RPxTonePTVOvertoneWave {
+                                        tones,
+                                    })
+                                }
+                                _ => panic!("Invalid wave type"),
+                            };
+
+                            let voice = RPxToneVoicePTV::new(
+                                basic_key as _,
+                                volume as _,
+                                pan as _,
+                                f32::from_le_bytes(tuning.to_le_bytes()),
+                                wave,
+                            );
+
+                            if data_flags & 0x2 != 0 {
+                                // TODO: envelope
+
+                                let _fps = v_r(&mut c).unwrap();
+                                let head_num = v_r(&mut c).unwrap();
+                                let body_num = v_r(&mut c).unwrap();
+                                let tail_num = v_r(&mut c).unwrap();
+
+                                println!("{_fps}, {head_num}, {body_num}, {tail_num}");
+
+                                assert_eq!(body_num, 0);
+                                assert_eq!(tail_num, 1);
+
+                                let num = head_num + body_num + tail_num;
+
+                                (0..num).map(|_| {
+                                    let _x = v_r(&mut c).unwrap();
+                                    let _y = v_r(&mut c).unwrap();
+                                }).for_each(drop);
+                            }
+
+                            return Some(voice);
+                        }
+
+                        None
+                    }).collect();
 
                     self.woices.push(RPxToneWoice {
                         name: String::new(),
                         woice_type: RPxToneWoiceType::PTV(RPxToneWoicePTV {
-                            voices: vec![],
+                            voices,
                         }),
                     });
-
-                    // TODO: placeholder
-                    c.set_position(c.position() + block_size as u64);
                 },
                 b"matePTN " => {
                     self.woices.push(RPxToneWoice {

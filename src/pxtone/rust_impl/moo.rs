@@ -267,6 +267,19 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
 
                                         v += val * *data.volume * *data.velocity * i16::MAX as f32;
                                     }
+                                    WoiceType::PTV(ptv) => {
+                                        for voice in &ptv.voices {
+                                            let mut val = voice.sample(cycle);
+
+                                            let flag_smooth = true;
+                                            if flag_smooth && cycle * 44100.0 < smooth_smps as f32
+                                            {
+                                                val *= (cycle * 44100.0) / smooth_smps as f32;
+                                            }
+
+                                            v += val * *data.volume * *data.velocity * i16::MAX as f32;
+                                        }
+                                    }
                                     _ => {},
                                 };
                             }
