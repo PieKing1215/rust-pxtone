@@ -45,6 +45,9 @@ impl PxToneServiceIO for RPxTone {
 
     #[allow(clippy::too_many_lines)]
     fn read_bytes(&mut self, bytes: &[u8]) -> Result<(), Self::Error> {
+        self.event_list = RPxToneEventList::default();
+        self.woices.clear();
+
         let mut c = Cursor::new(bytes);
 
         let mut name_buf = [0_u8; 16];
