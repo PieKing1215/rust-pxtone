@@ -1,4 +1,4 @@
-use std::{io::Cursor, f32::consts::PI};
+use std::{f32::consts::PI, io::Cursor};
 
 use lewton::{inside_ogg::OggStreamReader, VorbisError};
 
@@ -222,8 +222,13 @@ pub struct RPxToneVoicePTV {
 
 impl RPxToneVoicePTV {
     #[must_use]
-    pub fn new(basic_key: i32, volume: i32, pan: i32, tuning: f32, wave: RPxTonePTVWaveType) -> Self {
-
+    pub fn new(
+        basic_key: i32,
+        volume: i32,
+        pan: i32,
+        tuning: f32,
+        wave: RPxTonePTVWaveType,
+    ) -> Self {
         let sample_num = 400;
         let channels = 2;
         let samples_per_second = 44100;
@@ -234,12 +239,16 @@ impl RPxToneVoicePTV {
         let ratio_to_a = ratio_to_a / 2_f32.powf(semitone_key_offset / 12.0);
 
         // TODO: stereo
-        let samples = (0..sample_num).map(|i| {
-            match &wave {
-                RPxTonePTVWaveType::Coordinate(c) => c.sample(i as f32 / sample_num as f32) * volume as f32 / 128.0 / 128.0 / 2.0,
-                RPxTonePTVWaveType::Overtone(o) => o.sample(i as f32 / sample_num as f32) * volume as f32 / 128.0 / 2.0,
-            }
-        }).collect();
+        let samples = (0..sample_num)
+            .map(|i| match &wave {
+                RPxTonePTVWaveType::Coordinate(c) => {
+                    c.sample(i as f32 / sample_num as f32) * volume as f32 / 128.0 / 128.0 / 2.0
+                },
+                RPxTonePTVWaveType::Overtone(o) => {
+                    o.sample(i as f32 / sample_num as f32) * volume as f32 / 128.0 / 2.0
+                },
+            })
+            .collect();
 
         Self {
             basic_key,
@@ -389,10 +398,7 @@ pub struct RPxTonePTVCoordinatePoint {
 
 impl RPxTonePTVCoordinatePoint {
     pub(crate) fn new(x: u32, y: i32) -> Self {
-        Self {
-            x,
-            y,
-        }
+        Self { x, y }
     }
 }
 
@@ -682,7 +688,10 @@ pub struct RPxToneVoiceOGGV {
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum RPxToneVoiceOGGVError {
-    InvalidOGGVConfig { samples_per_second: u8, channels: u8 },
+    InvalidOGGVConfig {
+        samples_per_second: u8,
+        channels: u8,
+    },
     VorbisError(VorbisError),
 }
 
@@ -716,19 +725,22 @@ impl RPxToneVoiceOGGV {
 
         let mut samples = vec![];
 
-        while let Some(raw_samples) = ogg_reader.read_dec_packet_itl().map_err(RPxToneVoiceOGGVError::VorbisError)? {
+        while let Some(raw_samples) = ogg_reader
+            .read_dec_packet_itl()
+            .map_err(RPxToneVoiceOGGVError::VorbisError)?
+        {
             if ogg_channels == 2 {
                 //TODO: real stereo
                 samples.extend(
                     raw_samples
                         .chunks_exact(2)
-                        .map(|a| a[0] as f32 / i16::MAX as f32 / 2.0)
+                        .map(|a| a[0] as f32 / i16::MAX as f32 / 2.0),
                 );
             } else {
                 samples.extend(
                     raw_samples
                         .into_iter()
-                        .map(|a| a as f32 / i16::MAX as f32 / 2.0)
+                        .map(|a| a as f32 / i16::MAX as f32 / 2.0),
                 );
             }
         }

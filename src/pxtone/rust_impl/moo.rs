@@ -1,15 +1,12 @@
-use std::{
-    collections::HashMap,
-    ops::Deref,
-};
+use std::{collections::HashMap, ops::Deref};
 
 use crate::{
     interface::{
         event::{
-            BaseEvent, EventKey, EventOn, EventVelocity, EventVoiceNo, EventVolume, GenericEvent,
-            GenericEventKind, EventTuning, TuningValue, EventPorta,
+            BaseEvent, EventKey, EventOn, EventPorta, EventTuning, EventVelocity, EventVoiceNo,
+            EventVolume, GenericEvent, GenericEventKind, TuningValue,
         },
-        moo::{Moo, AsMooRef},
+        moo::{AsMooRef, Moo},
         service::PxTone,
         woice::{VoicePCM, Woice, WoiceType},
     },
@@ -159,7 +156,11 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                             data.key_now = data.key_start + data.key_margin;
                             data.key_start = data.key_now;
                             data.key_margin = 0;
-                            data.on = Some(UnitOnData { start: on.clock(), length: on.length(), cycle: 0.0 });
+                            data.on = Some(UnitOnData {
+                                start: on.clock(),
+                                length: on.length(),
+                                cycle: 0.0,
+                            });
                         },
                         GenericEventKind::Key(key) => {
                             let key_v = key.key();
@@ -217,9 +218,11 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
 
                             // porta
                             if data.porta > 0 && data.key_margin != 0 {
-                                let thru = (clock_ticks - data.porta_start as f32) / data.porta as f32;
+                                let thru =
+                                    (clock_ticks - data.porta_start as f32) / data.porta as f32;
                                 let thru = thru.clamp(0.0, 1.0);
-                                data.key_now = (data.key_start as f32 + data.key_margin as f32 * thru) as _;
+                                data.key_now =
+                                    (data.key_start as f32 + data.key_margin as f32 * thru) as _;
                             } else {
                                 data.key_now = data.key_start + data.key_margin;
                             }
@@ -231,8 +234,9 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                             // 1.05946^x == 2^(x/12)
                             // 1.05946 == 2^(1/12)
                             #[allow(clippy::excessive_precision)]
-                            let key_freq =
-                                16.3515 * (1.0594630943592953_f32).powf((data.key_now as f32 - 13056.0) / 256.0);
+                            let key_freq = 16.3515
+                                * (1.0594630943592953_f32)
+                                    .powf((data.key_now as f32 - 13056.0) / 256.0);
 
                             on.cycle += (delta * key_freq * *data.tuning) as f64;
                             // on.cycle = (on_secs * key_freq * *data.tuning) as f64;
@@ -266,20 +270,22 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                                         }
 
                                         v += val * *data.volume * *data.velocity * i16::MAX as f32;
-                                    }
+                                    },
                                     WoiceType::PTV(ptv) => {
                                         for voice in &ptv.voices {
                                             let mut val = voice.sample(cycle);
 
                                             let flag_smooth = true;
-                                            if flag_smooth && cycle * 44100.0 < smooth_smps as f32
-                                            {
+                                            if flag_smooth && cycle * 44100.0 < smooth_smps as f32 {
                                                 val *= (cycle * 44100.0) / smooth_smps as f32;
                                             }
 
-                                            v += val * *data.volume * *data.velocity * i16::MAX as f32;
+                                            v += val
+                                                * *data.volume
+                                                * *data.velocity
+                                                * i16::MAX as f32;
                                         }
-                                    }
+                                    },
                                     _ => {},
                                 };
                             }
@@ -287,7 +293,8 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                     }
 
                     // println!("{v} {l}");
-                    *bsmp = (v / 2.0 * self.master_volume).clamp(i16::MIN as f32, i16::MAX as f32) as _;
+                    *bsmp =
+                        (v / 2.0 * self.master_volume).clamp(i16::MIN as f32, i16::MAX as f32) as _;
                     self.smp += 1;
                     self.last_sample_clock_secs = clock_secs;
                 }

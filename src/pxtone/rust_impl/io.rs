@@ -10,11 +10,17 @@ use crate::{
         service::PxTone,
     },
     rust_impl::woice::{
-        RPxToneVoicePCM, RPxToneVoicePCMError, RPxToneWoice, RPxToneWoicePCM, RPxToneWoiceType, RPxToneVoicePTV, RPxTonePTVWaveType, RPxTonePTVCoordinateWave, RPxTonePTVCoordinatePoint, RPxTonePTVOvertoneWave, RPxTonePTVOvertoneWaveTone,
+        RPxTonePTVCoordinatePoint, RPxTonePTVCoordinateWave, RPxTonePTVOvertoneWave,
+        RPxTonePTVOvertoneWaveTone, RPxTonePTVWaveType, RPxToneVoicePCM, RPxToneVoicePCMError,
+        RPxToneVoicePTV, RPxToneWoice, RPxToneWoicePCM, RPxToneWoiceType,
     },
 };
 
-use super::{service::RPxTone, woice::{RPxToneWoiceOGGV, RPxToneVoiceOGGV, RPxToneVoiceOGGVError, RPxToneWoicePTV}, event::RPxToneEventList};
+use super::{
+    event::RPxToneEventList,
+    service::RPxTone,
+    woice::{RPxToneVoiceOGGV, RPxToneVoiceOGGVError, RPxToneWoiceOGGV, RPxToneWoicePTV},
+};
 
 pub struct RPxToneIO {}
 
@@ -202,7 +208,7 @@ impl PxToneServiceIO for RPxTone {
 
                     let mut data_buf = vec![0_u8; data_size as _];
                     c.read_exact(&mut data_buf).unwrap();
-                    
+
                     self.woices.push(RPxToneWoice {
                         name: String::new(),
                         woice_type: RPxToneWoiceType::OGGV(RPxToneWoiceOGGV {
@@ -218,12 +224,18 @@ impl PxToneServiceIO for RPxTone {
                                 voice_flags & 0x1 != 0,
                                 voice_flags & 0x2 != 0,
                                 voice_flags & 0x4 != 0,
-                            ).map_err(|e| match e {
+                            )
+                            .map_err(|e| match e {
                                 RPxToneVoiceOGGVError::InvalidOGGVConfig {
                                     samples_per_second,
                                     channels,
-                                } => RPxToneIOError::InvalidOGGVConfig { samples_per_second, channels },
-                                RPxToneVoiceOGGVError::VorbisError(e) => RPxToneIOError::VorbisError(e),
+                                } => RPxToneIOError::InvalidOGGVConfig {
+                                    samples_per_second,
+                                    channels,
+                                },
+                                RPxToneVoiceOGGVError::VorbisError(e) => {
+                                    RPxToneIOError::VorbisError(e)
+                                },
                             })?,
                         }),
                     });
@@ -357,17 +369,13 @@ impl PxToneServiceIO for RPxTone {
 
                     self.woices.push(RPxToneWoice {
                         name: String::new(),
-                        woice_type: RPxToneWoiceType::PTV(RPxToneWoicePTV {
-                            voices,
-                        }),
+                        woice_type: RPxToneWoiceType::PTV(RPxToneWoicePTV { voices }),
                     });
                 },
                 b"matePTN " => {
                     self.woices.push(RPxToneWoice {
                         name: String::new(),
-                        woice_type: RPxToneWoiceType::PTV(RPxToneWoicePTV {
-                            voices: vec![],
-                        }),
+                        woice_type: RPxToneWoiceType::PTV(RPxToneWoicePTV { voices: vec![] }),
                     });
 
                     // TODO: placeholder
