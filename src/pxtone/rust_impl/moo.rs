@@ -293,7 +293,7 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
     }
 
     fn now_clock(&self) -> u32 {
-        todo!()
+        self.last_clock as u32
     }
 
     fn end_clock(&self) -> u32 {
