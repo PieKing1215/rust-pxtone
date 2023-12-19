@@ -28,6 +28,8 @@ pub struct RPxToneMoo<'a> {
     last_sample_clock_secs: f32,
 
     unit_data: HashMap<u8, UnitData>,
+
+    master_volume: f32,
 }
 
 struct UnitData {
@@ -98,6 +100,8 @@ impl AsMooRef for RPxTone {
             last_clock: 0.0,
             last_sample_clock_secs: 0.0,
             unit_data: HashMap::new(),
+
+            master_volume: 1.0,
         }))
     }
 }
@@ -198,7 +202,7 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                     let clock_ticks = clock_secs * ticks_per_sec;
 
                     // println!("skip {skip}");
-                    let mut v = 0;
+                    let mut v: f32 = 0.0;
 
                     #[allow(clippy::for_kv_map)]
                     for (_unit, data) in &mut self.unit_data {
@@ -250,8 +254,7 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                                             val *= (cycle * 44100.0) / smooth_smps as f32;
                                         }
 
-                                        v += (val * *data.volume * *data.velocity * i16::MAX as f32)
-                                            as i16;
+                                        v += val * *data.volume * *data.velocity * i16::MAX as f32;
                                     },
                                     WoiceType::OGGV(oggv) => {
                                         let mut val = oggv.voice.sample(cycle);
@@ -262,8 +265,7 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                                             val *= (cycle * 44100.0) / smooth_smps as f32;
                                         }
 
-                                        v += (val * *data.volume * *data.velocity * i16::MAX as f32)
-                                            as i16;
+                                        v += val * *data.volume * *data.velocity * i16::MAX as f32;
                                     }
                                     _ => {},
                                 };
@@ -272,7 +274,7 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                     }
 
                     // println!("{v} {l}");
-                    *bsmp = v;
+                    *bsmp = (v / 2.0 * self.master_volume).clamp(i16::MIN as f32, i16::MAX as f32) as _;
                     self.smp += 1;
                     self.last_sample_clock_secs = clock_secs;
                 }
@@ -329,7 +331,9 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
         (self.sample_rate as f32 * 60.0 * total_beats as f32 / self.beat_tempo() as f32) as u32
     }
 
-    fn set_master_volume(&mut self, _volume: f32) -> Result<(), RPxToneMooError> {
-        todo!()
+    fn set_master_volume(&mut self, volume: f32) -> Result<(), RPxToneMooError> {
+        self.master_volume = volume;
+
+        Ok(())
     }
 }
