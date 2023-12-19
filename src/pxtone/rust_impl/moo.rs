@@ -19,7 +19,7 @@ use crate::{
 use super::service::RPxTone;
 
 pub struct RPxToneMoo<'a> {
-    pxtone: &'a mut RPxTone,
+    pxtone: &'a RPxTone,
     channels: u8,
     sample_rate: u32,
 
@@ -78,12 +78,6 @@ impl Deref for RPxToneMoo<'_> {
     type Target = RPxTone;
 
     fn deref(&self) -> &Self::Target {
-        self.pxtone
-    }
-}
-
-impl DerefMut for RPxToneMoo<'_> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
         self.pxtone
     }
 }
