@@ -45,3 +45,19 @@ pub trait AsMoo {
 
     fn as_moo(&mut self) -> BoxOrMut<Self::M<'_>>;
 }
+
+pub trait AsMooRef {
+    type M<'a>: Moo<'a>
+    where
+        Self: 'a;
+
+    fn as_moo_ref(&self) -> BoxOrMut<Self::M<'_>>;
+}
+
+impl<T: AsMooRef> AsMoo for T {
+    type M<'a> = <T as AsMooRef>::M<'a> where Self: 'a;
+
+    fn as_moo(&mut self) -> BoxOrMut<Self::M<'_>> {
+        self.as_moo_ref()
+    }
+}

@@ -9,7 +9,7 @@ use crate::{
             BaseEvent, EventKey, EventOn, EventVelocity, EventVoiceNo, EventVolume, GenericEvent,
             GenericEventKind, EventTuning, TuningValue, EventPorta,
         },
-        moo::{AsMoo, Moo},
+        moo::{AsMoo, Moo, AsMooRef},
         service::PxTone,
         woice::{VoicePCM, Woice, WoiceType},
     },
@@ -91,10 +91,10 @@ impl DerefMut for RPxToneMoo<'_> {
 #[derive(Debug)]
 pub enum RPxToneMooError {}
 
-impl AsMoo for RPxTone {
+impl AsMooRef for RPxTone {
     type M<'a> = RPxToneMoo<'a> where Self: 'a;
 
-    fn as_moo(&mut self) -> BoxOrMut<Self::M<'_>> {
+    fn as_moo_ref(&self) -> BoxOrMut<Self::M<'_>> {
         BoxOrMut::Box(Box::new(RPxToneMoo {
             pxtone: self,
             channels: 2,
