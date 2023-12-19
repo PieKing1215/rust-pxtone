@@ -336,8 +336,6 @@ impl RPxTonePTVCoordinateWave {
     pub fn sample(&self, thru: f32) -> f32 {
         let i = (self.resolution as f32 * thru) as u32;
 
-        let mut out = 0.0;
-
         let mut c = 0;
         while c < self.points.len() {
             if self.points[c].x > i {
@@ -346,39 +344,29 @@ impl RPxTonePTVCoordinateWave {
             c += 1;
         }
 
-        let mut x1 = 0;
-        let mut y1 = 0;
-        let mut x2 = 0;
-        let mut y2 = 0;
+        let p1;
+        let p2;
 
         if c == self.points.len() {
-            x1 = self.points[c - 1].x;
-            y1 = self.points[c - 1].y;
-            x2 = self.resolution;
-            y2 = self.points[0].y;
+            p1 = RPxTonePTVCoordinatePoint::new(self.points[c - 1].x, self.points[c - 1].y);
+            p2 = RPxTonePTVCoordinatePoint::new(self.resolution, self.points[0].y);
         } else if c > 0 {
-            x1 = self.points[c - 1].x;
-            y1 = self.points[c - 1].y;
-            x2 = self.points[c].x;
-            y2 = self.points[c].y;
+            p1 = RPxTonePTVCoordinatePoint::new(self.points[c - 1].x, self.points[c - 1].y);
+            p2 = RPxTonePTVCoordinatePoint::new(self.points[c].x, self.points[c].y);
         } else {
-            x1 = self.points[0].x;
-            y1 = self.points[0].y;
-            x2 = self.points[0].x;
-            y2 = self.points[0].y;
+            p1 = RPxTonePTVCoordinatePoint::new(self.points[0].x, self.points[0].y);
+            p2 = RPxTonePTVCoordinatePoint::new(self.points[0].x, self.points[0].y);
         }
 
-        let w = x2 - x1;
-        let i = i - x1;
-        let h = y2 - y1;
+        let w = p2.x - p1.x;
+        let i = i - p1.x;
+        let h = p2.y - p1.y;
 
         if i > 0 {
-            out = y1 as f32 + h as f32 * i as f32 / w as f32;
+            p1.y as f32 + h as f32 * i as f32 / w as f32
         } else {
-            out = y1 as f32;
+            p1.y as f32
         }
-
-        out
     }
 }
 
@@ -397,6 +385,15 @@ impl PTVCoordinateWave for RPxTonePTVCoordinateWave {
 pub struct RPxTonePTVCoordinatePoint {
     pub(crate) x: u32,
     pub(crate) y: i32,
+}
+
+impl RPxTonePTVCoordinatePoint {
+    pub(crate) fn new(x: u32, y: i32) -> Self {
+        Self {
+            x,
+            y,
+        }
+    }
 }
 
 impl PTVCoordinateWavePoint for RPxTonePTVCoordinatePoint {

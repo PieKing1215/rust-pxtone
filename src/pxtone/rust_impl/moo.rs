@@ -1,6 +1,6 @@
 use std::{
     collections::HashMap,
-    ops::{Deref, DerefMut},
+    ops::Deref,
 };
 
 use crate::{
@@ -9,7 +9,7 @@ use crate::{
             BaseEvent, EventKey, EventOn, EventVelocity, EventVoiceNo, EventVolume, GenericEvent,
             GenericEventKind, EventTuning, TuningValue, EventPorta,
         },
-        moo::{AsMoo, Moo, AsMooRef},
+        moo::{Moo, AsMooRef},
         service::PxTone,
         woice::{VoicePCM, Woice, WoiceType},
     },

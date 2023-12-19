@@ -233,7 +233,7 @@ impl PxToneServiceIO for RPxTone {
                     let _x3x_unit_no = c.read_u16::<LittleEndian>().unwrap();
                     let rrr = c.read_u16::<LittleEndian>().unwrap();
                     let tuning = c.read_f32::<LittleEndian>().unwrap();
-                    let tuning = f32::from_le_bytes(tuning.to_le_bytes());
+                    let _tuning = f32::from_le_bytes(tuning.to_le_bytes());
                     let _size = c.read_u32::<LittleEndian>().unwrap();
 
                     assert_eq!(rrr, 0);
