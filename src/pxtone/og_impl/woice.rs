@@ -167,11 +167,15 @@ impl VoicePCM for pxtnVOICEUNIT {
     }
 
     #[allow(clippy::cast_precision_loss)]
-    fn sample(&self, cycle: f32) -> f32 {
+    fn sample(&self, cycle: f32, channel: u8) -> f32 {
+        // TODO: check that this handles stereo correctly
         let pcm = unsafe { &*self.p_pcm };
         let size = (pcm._smp_head + pcm._smp_body + pcm._smp_tail) * pcm._ch * pcm._bps / 8;
         let buf = unsafe { slice::from_raw_parts(pcm._p_smp, size as usize) };
-        buf[(buf.len() as f64 * cycle as f64) as usize % buf.len()] as f32 / 256.0 - 0.5
+        buf[self.select_channel_index((buf.len() as f64 * cycle as f64) as usize, channel)
+            % buf.len()] as f32
+            / 256.0
+            - 0.5
     }
 }
 

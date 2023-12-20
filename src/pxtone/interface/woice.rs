@@ -144,7 +144,17 @@ pub trait VoicePCM: Voice {
     fn bits_per_sample(&self) -> u8;
 
     /// cycle is >= 0.0 and each 1.0 represents 1Hz passing
-    fn sample(&self, cycle: f32) -> f32;
+    fn sample(&self, cycle: f32, channel: u8) -> f32;
+
+    fn select_channel_index(&self, index: usize, channel: u8) -> usize {
+        if self.channels() == 2 {
+            // floor down to even and add 0 or 1 for channel
+            let i = index / 2 * 2;
+            i + channel as usize
+        } else {
+            index
+        }
+    }
 }
 
 pub trait PTVCoordinateWavePoint {

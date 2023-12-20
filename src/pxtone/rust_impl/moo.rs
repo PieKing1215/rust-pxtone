@@ -3,8 +3,8 @@ use std::{collections::HashMap, ops::Deref};
 use crate::{
     interface::{
         event::{
-            BaseEvent, EventKey, EventOn, EventPorta, EventTuning, EventVelocity, EventVoiceNo,
-            EventVolume, GenericEvent, GenericEventKind, TuningValue,
+            BaseEvent, EventKey, EventOn, EventPanVolume, EventPorta, EventTuning, EventVelocity,
+            EventVoiceNo, EventVolume, GenericEvent, GenericEventKind, PanValue, TuningValue,
         },
         moo::{AsMooRef, Moo},
         service::PxTone,
@@ -43,6 +43,7 @@ struct UnitData {
     tuning: TuningValue,
     porta: u32,
     porta_start: u32,
+    pan_volume: PanValue,
 }
 
 const DEFAULT_KEY: i32 = 24576;
@@ -61,6 +62,7 @@ impl Default for UnitData {
             tuning: TuningValue::new(1.0),
             porta: 0,
             porta_start: 0,
+            pan_volume: PanValue::center(),
         }
     }
 }
@@ -133,7 +135,7 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
         // only check events every 100 samples, minor performance boost
         for ch in buffer.chunks_mut(100) {
             profiling::scope!("chunk");
-            let clock_secs = (self.smp as f32 / self.channels as f32) / self.sample_rate as f32;
+            let clock_secs = self.smp as f32 / self.sample_rate as f32;
             let clock_ticks = clock_secs * ticks_per_sec;
             {
                 profiling::scope!("events");
@@ -188,6 +190,10 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                         GenericEventKind::Porta(porta) => {
                             self.unit_data.entry(e.unit_no()).or_default().porta = porta.porta();
                         },
+                        GenericEventKind::PanVolume(pan_volume) => {
+                            self.unit_data.entry(e.unit_no()).or_default().pan_volume =
+                                pan_volume.pan_volume();
+                        },
                         _ => {},
                     }
                 }
@@ -195,15 +201,14 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
 
             {
                 profiling::scope!("sample chunk");
-                for bsmp in ch {
+                for bsmp in ch.chunks_mut(self.channels as _) {
                     profiling::scope!("one sample");
-                    let clock_secs =
-                        (self.smp as f32 / self.channels as f32) / self.sample_rate as f32;
+                    let clock_secs = self.smp as f32 / self.sample_rate as f32;
                     let delta = clock_secs - self.last_sample_clock_secs;
                     let clock_ticks = clock_secs * ticks_per_sec;
 
                     // println!("skip {skip}");
-                    let mut v: f32 = 0.0;
+                    let mut v: Box<[f32]> = (0..bsmp.len()).map(|_| 0.0).collect();
 
                     #[allow(clippy::for_kv_map)]
                     for (_unit, data) in &mut self.unit_data {
@@ -247,43 +252,69 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                             let woice = &self.pxtone.woices.get(data.woice as usize);
 
                             if let Some(woice) = woice {
+                                let pan_volumes = if self.channels == 2 {
+                                    [
+                                        (1.0 - *data.pan_volume).clamp(0.0, 1.0),
+                                        (*data.pan_volume + 1.0).clamp(0.0, 1.0),
+                                    ]
+                                } else {
+                                    [1.0, 1.0]
+                                };
+
                                 #[allow(clippy::single_match)]
                                 match woice.woice_type() {
                                     WoiceType::PCM(pcm) => {
-                                        let mut val = pcm.voice.sample(cycle);
+                                        for (ch, v) in v.iter_mut().enumerate() {
+                                            let mut val = pcm.voice.sample(cycle, ch as _);
 
-                                        if pcm.voice.flag_smooth
-                                            && cycle * 44100.0 < smooth_smps as f32
-                                        {
-                                            val *= (cycle * 44100.0) / smooth_smps as f32;
-                                        }
-
-                                        v += val * *data.volume * *data.velocity * i16::MAX as f32;
-                                    },
-                                    WoiceType::OGGV(oggv) => {
-                                        let mut val = oggv.voice.sample(cycle);
-
-                                        if oggv.voice.flag_smooth
-                                            && cycle * 44100.0 < smooth_smps as f32
-                                        {
-                                            val *= (cycle * 44100.0) / smooth_smps as f32;
-                                        }
-
-                                        v += val * *data.volume * *data.velocity * i16::MAX as f32;
-                                    },
-                                    WoiceType::PTV(ptv) => {
-                                        for voice in &ptv.voices {
-                                            let mut val = voice.sample(cycle);
-
-                                            let flag_smooth = true;
-                                            if flag_smooth && cycle * 44100.0 < smooth_smps as f32 {
+                                            if pcm.voice.flag_smooth
+                                                && cycle * 44100.0 < smooth_smps as f32
+                                            {
                                                 val *= (cycle * 44100.0) / smooth_smps as f32;
                                             }
 
-                                            v += val
+                                            *v += val
                                                 * *data.volume
                                                 * *data.velocity
+                                                * pan_volumes[ch]
                                                 * i16::MAX as f32;
+                                        }
+                                    },
+                                    WoiceType::OGGV(oggv) => {
+                                        for (ch, v) in v.iter_mut().enumerate() {
+                                            let mut val = oggv.voice.sample(cycle, ch as _);
+
+                                            if oggv.voice.flag_smooth
+                                                && cycle * 44100.0 < smooth_smps as f32
+                                            {
+                                                val *= (cycle * 44100.0) / smooth_smps as f32;
+                                            }
+
+                                            *v += val
+                                                * *data.volume
+                                                * *data.velocity
+                                                * pan_volumes[ch]
+                                                * i16::MAX as f32;
+                                        }
+                                    },
+                                    WoiceType::PTV(ptv) => {
+                                        for voice in &ptv.voices {
+                                            for (ch, v) in v.iter_mut().enumerate() {
+                                                let mut val = voice.sample(cycle, ch as _);
+
+                                                let flag_smooth = true;
+                                                if flag_smooth
+                                                    && cycle * 44100.0 < smooth_smps as f32
+                                                {
+                                                    val *= (cycle * 44100.0) / smooth_smps as f32;
+                                                }
+
+                                                *v += val
+                                                    * *data.volume
+                                                    * *data.velocity
+                                                    * pan_volumes[ch]
+                                                    * i16::MAX as f32;
+                                            }
                                         }
                                     },
                                     _ => {},
@@ -292,9 +323,11 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                         }
                     }
 
-                    // println!("{v} {l}");
-                    *bsmp =
-                        (v / 2.0 * self.master_volume).clamp(i16::MIN as f32, i16::MAX as f32) as _;
+                    for (ch, v) in v.iter().enumerate() {
+                        bsmp[ch] = (v / 2.0 * self.master_volume)
+                            .clamp(i16::MIN as f32, i16::MAX as f32)
+                            as _;
+                    }
                     self.smp += 1;
                     self.last_sample_clock_secs = clock_secs;
                 }

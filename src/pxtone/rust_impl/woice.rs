@@ -104,12 +104,22 @@ impl RPxToneVoicePCM {
             //TODO: real stereo
             (8, 2) => data
                 .chunks_exact(2)
-                .map(|s| s[0] as f32 / u8::MAX as f32 - 0.5)
+                .flat_map(|s| {
+                    [
+                        s[0] as f32 / u8::MAX as f32 - 0.5,
+                        s[1] as f32 / u8::MAX as f32 - 0.5,
+                    ]
+                })
                 .collect(),
             //TODO: real stereo
             (16, 2) => data
                 .chunks_exact(4)
-                .map(|a| i16::from_ne_bytes([a[0], a[1]]) as f32 / i16::MAX as f32 / 2.0)
+                .flat_map(|a| {
+                    [
+                        i16::from_ne_bytes([a[0], a[1]]) as f32 / i16::MAX as f32 / 2.0,
+                        i16::from_ne_bytes([a[2], a[3]]) as f32 / i16::MAX as f32 / 2.0,
+                    ]
+                })
                 .collect(),
             _ => return Err(RPxToneVoicePCMError::InvalidPCMConfig { bits_per_sample, channels }),
         };
@@ -182,15 +192,18 @@ impl VoicePCM for RPxToneVoicePCM {
     #[allow(clippy::cast_precision_loss)]
     #[allow(clippy::inline_always)]
     #[inline(always)] // this function is very hot
-    fn sample(&self, cycle: f32) -> f32 {
+    fn sample(&self, cycle: f32, channel: u8) -> f32 {
         let idx = cycle / self.ratio_to_a * self.tuning;
 
         if self.flag_loop {
-            self.samples[(self.samples.len() as f32 * idx) as usize % self.samples.len()]
+            self.samples[self.select_channel_index(
+                (self.samples.len() as f32 * idx) as usize % self.samples.len(),
+                channel,
+            )]
         } else {
             let i = (self.samples.len() as f32 * idx) as usize;
             if i < self.samples.len() {
-                self.samples[i]
+                self.samples[self.select_channel_index(i, channel)]
             } else {
                 0.0
             }
@@ -247,6 +260,12 @@ impl RPxToneVoicePTV {
                 RPxTonePTVWaveType::Overtone(o) => {
                     o.sample(i as f32 / sample_num as f32) * volume as f32 / 128.0 / 2.0
                 },
+            })
+            .flat_map(|v| {
+                let vol_left = (128 - pan).clamp(0, 64) as f32 / 64.0;
+                let vol_right = (pan).clamp(0, 64) as f32 / 64.0;
+
+                [v * vol_left, v * vol_right]
             })
             .collect();
 
@@ -329,10 +348,13 @@ impl VoicePCM for RPxToneVoicePTV {
     #[allow(clippy::cast_precision_loss)]
     #[allow(clippy::inline_always)]
     #[inline(always)] // this function is very hot
-    fn sample(&self, cycle: f32) -> f32 {
+    fn sample(&self, cycle: f32, channel: u8) -> f32 {
         let idx = cycle / self.ratio_to_a * self.tuning;
 
-        self.samples[(self.samples.len() as f32 * idx) as usize % self.samples.len()]
+        self.samples[self.select_channel_index(
+            (self.samples.len() as f32 * idx) as usize % self.samples.len(),
+            channel,
+        )]
     }
 }
 
@@ -527,7 +549,7 @@ impl VoicePCM for RPxToneVoicePTN {
         self.bits_per_sample
     }
 
-    fn sample(&self, _cycle: f32) -> f32 {
+    fn sample(&self, _cycle: f32, _channel: u8) -> f32 {
         todo!()
     }
 }
@@ -730,12 +752,12 @@ impl RPxToneVoiceOGGV {
             .map_err(RPxToneVoiceOGGVError::VorbisError)?
         {
             if ogg_channels == 2 {
-                //TODO: real stereo
-                samples.extend(
-                    raw_samples
-                        .chunks_exact(2)
-                        .map(|a| a[0] as f32 / i16::MAX as f32 / 2.0),
-                );
+                samples.extend(raw_samples.chunks_exact(2).flat_map(|a| {
+                    [
+                        a[0] as f32 / i16::MAX as f32 / 2.0,
+                        a[1] as f32 / i16::MAX as f32 / 2.0,
+                    ]
+                }));
             } else {
                 samples.extend(
                     raw_samples
@@ -816,15 +838,18 @@ impl VoicePCM for RPxToneVoiceOGGV {
     #[allow(clippy::cast_precision_loss)]
     #[allow(clippy::inline_always)]
     #[inline(always)] // this function is very hot
-    fn sample(&self, cycle: f32) -> f32 {
+    fn sample(&self, cycle: f32, channel: u8) -> f32 {
         let idx = cycle / self.ratio_to_a * self.tuning;
 
         if self.flag_loop {
-            self.samples[(self.samples.len() as f32 * idx) as usize % self.samples.len()]
+            self.samples[self.select_channel_index(
+                (self.samples.len() as f32 * idx) as usize % self.samples.len(),
+                channel,
+            )]
         } else {
             let i = (self.samples.len() as f32 * idx) as usize;
             if i < self.samples.len() {
-                self.samples[i]
+                self.samples[self.select_channel_index(i, channel)]
             } else {
                 0.0
             }
