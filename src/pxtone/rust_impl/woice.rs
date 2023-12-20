@@ -101,7 +101,6 @@ impl RPxToneVoicePCM {
                 .chunks_exact(2)
                 .map(|a| i16::from_ne_bytes([a[0], a[1]]) as f32 / i16::MAX as f32 / 2.0)
                 .collect(),
-            //TODO: real stereo
             (8, 2) => data
                 .chunks_exact(2)
                 .flat_map(|s| {
@@ -111,7 +110,6 @@ impl RPxToneVoicePCM {
                     ]
                 })
                 .collect(),
-            //TODO: real stereo
             (16, 2) => data
                 .chunks_exact(4)
                 .flat_map(|a| {
@@ -251,7 +249,6 @@ impl RPxToneVoicePTV {
         let semitone_key_offset = (17664 - basic_key) as f32 / 256.0;
         let ratio_to_a = ratio_to_a / 2_f32.powf(semitone_key_offset / 12.0);
 
-        // TODO: stereo
         let samples = (0..sample_num)
             .map(|i| match &wave {
                 RPxTonePTVWaveType::Coordinate(c) => {
