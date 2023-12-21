@@ -213,6 +213,13 @@ pub struct RPxToneWoicePTV {
     pub(crate) voices: Vec<RPxToneVoicePTV>,
 }
 
+#[allow(clippy::derivable_impls)]
+impl Default for RPxToneWoicePTV {
+    fn default() -> Self {
+        Self { voices: vec![] }
+    }
+}
+
 impl WoicePTV<RPxToneVoicePTV> for RPxToneWoicePTV {
     fn voices(&self) -> Vec<&RPxToneVoicePTV> {
         self.voices.iter().collect()
@@ -471,6 +478,12 @@ impl PTVOvertoneWaveTone for RPxTonePTVOvertoneWaveTone {
 
 pub struct RPxToneWoicePTN {
     pub(crate) voice: RPxToneVoicePTN,
+}
+
+impl Default for RPxToneWoicePTN {
+    fn default() -> Self {
+        Self { voice: RPxToneVoicePTN { basic_key: 17664, volume: 100, pan: 64, tuning: 1.0, channels: 1, samples_per_second: 44100, bits_per_sample: 8, ptn_sample_num: 0, ptn_units: vec![] } }
+    }
 }
 
 impl SingleVoice<RPxToneVoicePTN> for RPxToneWoicePTN {
@@ -944,6 +957,53 @@ impl Woices for RPxTone {
 impl WoicesMut for RPxTone {
     fn iter_mut<'a>(&'a mut self) -> Box<dyn Iterator<Item = BoxOrMut<Self::W>> + 'a> {
         Box::new(self.woices.iter_mut().map(BoxOrMut::Ref))
+    }
+
+    fn add_blank_ptv(&mut self) -> Option<BoxOrMut<<Self::W as Woice>::PTV>> {
+        self.woices.push(RPxToneWoice {
+            name: "blank".into(),
+            woice_type: RPxToneWoiceType::PTV(RPxToneWoicePTV::default()),
+        });
+        self.woices.last_mut().map(|r| BoxOrMut::Ref(match &mut r.woice_type {
+            RPxToneWoiceType::PTV(w) => w,
+            _ => unreachable!(),
+        }))
+    }
+
+    fn add_blank_ptn(&mut self) -> Option<BoxOrMut<<Self::W as Woice>::PTN>> {
+        self.woices.push(RPxToneWoice {
+            name: "blank".into(),
+            woice_type: RPxToneWoiceType::PTN(RPxToneWoicePTN::default()),
+        });
+        self.woices.last_mut().map(|r| BoxOrMut::Ref(match &mut r.woice_type {
+            RPxToneWoiceType::PTN(w) => w,
+            _ => unreachable!(),
+        }))
+    }
+
+    fn add_pcm_from_file<P: AsRef<std::path::Path>>(&mut self, _path: P) -> Option<BoxOrMut<<Self::W as Woice>::PCM>> {
+        todo!()
+    }
+
+    fn add_ptv_from_file<P: AsRef<std::path::Path>>(&mut self, _path: P) -> Option<BoxOrMut<<Self::W as Woice>::PTV>> {
+        todo!()
+    }
+
+    fn add_ptn_from_file<P: AsRef<std::path::Path>>(&mut self, _path: P) -> Option<BoxOrMut<<Self::W as Woice>::PTN>> {
+        todo!()
+    }
+
+    fn add_oggv_from_file<P: AsRef<std::path::Path>>(&mut self, _path: P) -> Option<BoxOrMut<<Self::W as Woice>::OGGV>> {
+        todo!()
+    }
+
+    fn remove(&mut self, index: usize) -> bool {
+        if index < self.woices.len() {
+            self.woices.remove(index);
+            true
+        } else {
+            false
+        }
     }
 }
 
