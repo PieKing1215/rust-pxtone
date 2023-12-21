@@ -182,6 +182,7 @@ impl GenericEvent for EVERECORD {
             EventKind::GroupNo => GenericEventKind::GroupNo(BoxOrMut::Ref(self)),
             EventKind::Tuning => GenericEventKind::Tuning(BoxOrMut::Ref(self)),
             EventKind::PanTime => GenericEventKind::PanTime(BoxOrMut::Ref(self)),
+            EventKind::Portament => GenericEventKind::Porta(BoxOrMut::Ref(self)),
             _ => GenericEventKind::Invalid,
         }
     }

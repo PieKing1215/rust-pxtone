@@ -64,6 +64,12 @@ fn do_stuff<
     // remove a unit
     units.remove(1);
 
+    // add a new woice from file
+    pxtone.woices_mut().add_ptv_from_file("examples/sample.ptvoice").unwrap();
+
+    // add a new black woice
+    pxtone.woices_mut().add_blank_ptv().unwrap();
+
     // iterate through woices and print out a bunch of details
     for (i, mut woice) in pxtone.woices_mut().iter_mut().enumerate() {
         println!("Woice #{i} \"{}\"", woice.name());

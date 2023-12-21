@@ -1,8 +1,8 @@
-use std::{ffi::CString, slice};
+use std::{ffi::CString, slice, io::Read};
 
 use pxtone_sys::{
     pxNOISEDESIGN_OSCILLATOR, pxNOISEDESIGN_UNIT, pxtnPOINT, pxtnVOICEUNIT, pxtnVOICEWAVE,
-    pxtnWoice,
+    pxtnWoice, pxtnDescriptor, pxtnWOICETYPE_pxtnWOICE_PCM, pxtnWOICETYPE, pxtnWOICETYPE_pxtnWOICE_PTN, pxtnWOICETYPE_pxtnWOICE_PTV, pxtnWOICETYPE_pxtnWOICE_OGGV,
 };
 
 use crate::{
@@ -18,7 +18,7 @@ use crate::{
     pxtone::util::{BoxOrMut, BoxOrRef},
 };
 
-use super::service::PxToneService;
+use super::{service::PxToneService, error::Error};
 
 impl Woice for pxtnWoice {
     type VPCM = pxtnVOICEUNIT;
@@ -406,6 +406,68 @@ impl WoicesMut for PxToneService<'_> {
                 .iter_mut()
                 .map(|w| BoxOrMut::Ref(unsafe { &mut **w } as &mut Self::W)),
         )
+    }
+
+    /// Add a blank ptvoice woice to the project.
+    fn add_blank_ptv(&mut self) -> Option<BoxOrMut<<Self::W as Woice>::PTV>> {
+        self.add_from_bytes(include_bytes!("blank.ptvoice"), pxtnWOICETYPE_pxtnWOICE_PTV)
+    }
+
+    /// Add a blank ptnoise woice to the project.
+    fn add_blank_ptn(&mut self) -> Option<BoxOrMut<<Self::W as Woice>::PTN>> {
+        self.add_from_bytes(include_bytes!("blank.ptnoise"), pxtnWOICETYPE_pxtnWOICE_PTN)
+    }
+
+    fn add_pcm_from_file<P: AsRef<std::path::Path>>(&mut self, path: P) -> Option<BoxOrMut<<Self::W as Woice>::PCM>> {
+        self.add_from_file(path, pxtnWOICETYPE_pxtnWOICE_PCM)
+    }
+
+    fn add_ptv_from_file<P: AsRef<std::path::Path>>(&mut self, path: P) -> Option<BoxOrMut<<Self::W as Woice>::PTV>> {
+        self.add_from_file(path, pxtnWOICETYPE_pxtnWOICE_PTV)
+    }
+
+    fn add_ptn_from_file<P: AsRef<std::path::Path>>(&mut self, path: P) -> Option<BoxOrMut<<Self::W as Woice>::PTN>> {
+        self.add_from_file(path, pxtnWOICETYPE_pxtnWOICE_PTN)
+    }
+
+    fn add_oggv_from_file<P: AsRef<std::path::Path>>(&mut self, path: P) -> Option<BoxOrMut<<Self::W as Woice>::OGGV>> {
+        self.add_from_file(path, pxtnWOICETYPE_pxtnWOICE_OGGV)
+    }
+
+    fn remove(&mut self, index: usize) -> bool {
+        unsafe {
+            self.raw_mut().Woice_Remove(index as _)
+        }
+    }
+}
+
+impl PxToneService<'_> {
+    fn add_from_file<P: AsRef<std::path::Path>>(&mut self, path: P, typ: pxtnWOICETYPE) -> Option<BoxOrMut<<Self as Woices>::W>> {
+        self.add_from_bytes(&std::fs::read(path.as_ref()).unwrap(), typ)
+    }
+
+    fn add_from_bytes(&mut self, bytes: &[u8], typ: pxtnWOICETYPE) -> Option<BoxOrMut<<Self as Woices>::W>> {
+        let svc = self.raw_mut();
+
+        let mut descriptor = unsafe { pxtnDescriptor::new() };
+        if !unsafe {
+            descriptor.set_memory_r(
+                bytes.as_ptr() as *const _ as *mut std::ffi::c_void,
+                bytes.len() as i32,
+            )
+        } {
+            // return Err(Error::DescR);
+            return None;
+        }
+
+        let idx = svc._woice_num;
+        let res = Error::from_raw(unsafe { svc.Woice_read(idx, &mut descriptor, typ) });
+        if res.is_ok() {
+            let w = unsafe { svc.Woice_Get_variable(idx) };
+            Some(BoxOrMut::Ref(unsafe { &mut *w } as &mut <Self as Woices>::W))
+        } else {
+            None
+        }
     }
 }
 
