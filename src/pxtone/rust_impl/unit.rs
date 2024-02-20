@@ -1,4 +1,7 @@
-use crate::{interface::unit::{HasUnits, Unit, Units, UnitsMut}, util::{BoxOrMut, BoxOrRef}};
+use crate::{
+    interface::unit::{HasUnits, Unit, Units, UnitsMut},
+    util::{BoxOrMut, BoxOrRef},
+};
 
 use super::service::RPxTone;
 

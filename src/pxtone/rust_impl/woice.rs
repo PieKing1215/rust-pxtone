@@ -482,7 +482,19 @@ pub struct RPxToneWoicePTN {
 
 impl Default for RPxToneWoicePTN {
     fn default() -> Self {
-        Self { voice: RPxToneVoicePTN { basic_key: 17664, volume: 100, pan: 64, tuning: 1.0, channels: 1, samples_per_second: 44100, bits_per_sample: 8, ptn_sample_num: 0, ptn_units: vec![] } }
+        Self {
+            voice: RPxToneVoicePTN {
+                basic_key: 17664,
+                volume: 100,
+                pan: 64,
+                tuning: 1.0,
+                channels: 1,
+                samples_per_second: 44100,
+                bits_per_sample: 8,
+                ptn_sample_num: 0,
+                ptn_units: vec![],
+            },
+        }
     }
 }
 
@@ -964,10 +976,12 @@ impl WoicesMut for RPxTone {
             name: "blank".into(),
             woice_type: RPxToneWoiceType::PTV(RPxToneWoicePTV::default()),
         });
-        self.woices.last_mut().map(|r| BoxOrMut::Ref(match &mut r.woice_type {
-            RPxToneWoiceType::PTV(w) => w,
-            _ => unreachable!(),
-        }))
+        self.woices.last_mut().map(|r| {
+            BoxOrMut::Ref(match &mut r.woice_type {
+                RPxToneWoiceType::PTV(w) => w,
+                _ => unreachable!(),
+            })
+        })
     }
 
     fn add_blank_ptn(&mut self) -> Option<BoxOrMut<<Self::W as Woice>::PTN>> {
@@ -975,25 +989,39 @@ impl WoicesMut for RPxTone {
             name: "blank".into(),
             woice_type: RPxToneWoiceType::PTN(RPxToneWoicePTN::default()),
         });
-        self.woices.last_mut().map(|r| BoxOrMut::Ref(match &mut r.woice_type {
-            RPxToneWoiceType::PTN(w) => w,
-            _ => unreachable!(),
-        }))
+        self.woices.last_mut().map(|r| {
+            BoxOrMut::Ref(match &mut r.woice_type {
+                RPxToneWoiceType::PTN(w) => w,
+                _ => unreachable!(),
+            })
+        })
     }
 
-    fn add_pcm_from_file<P: AsRef<std::path::Path>>(&mut self, _path: P) -> Option<BoxOrMut<<Self::W as Woice>::PCM>> {
+    fn add_pcm_from_file<P: AsRef<std::path::Path>>(
+        &mut self,
+        _path: P,
+    ) -> Option<BoxOrMut<<Self::W as Woice>::PCM>> {
         todo!()
     }
 
-    fn add_ptv_from_file<P: AsRef<std::path::Path>>(&mut self, _path: P) -> Option<BoxOrMut<<Self::W as Woice>::PTV>> {
+    fn add_ptv_from_file<P: AsRef<std::path::Path>>(
+        &mut self,
+        _path: P,
+    ) -> Option<BoxOrMut<<Self::W as Woice>::PTV>> {
         todo!()
     }
 
-    fn add_ptn_from_file<P: AsRef<std::path::Path>>(&mut self, _path: P) -> Option<BoxOrMut<<Self::W as Woice>::PTN>> {
+    fn add_ptn_from_file<P: AsRef<std::path::Path>>(
+        &mut self,
+        _path: P,
+    ) -> Option<BoxOrMut<<Self::W as Woice>::PTN>> {
         todo!()
     }
 
-    fn add_oggv_from_file<P: AsRef<std::path::Path>>(&mut self, _path: P) -> Option<BoxOrMut<<Self::W as Woice>::OGGV>> {
+    fn add_oggv_from_file<P: AsRef<std::path::Path>>(
+        &mut self,
+        _path: P,
+    ) -> Option<BoxOrMut<<Self::W as Woice>::OGGV>> {
         todo!()
     }
 
