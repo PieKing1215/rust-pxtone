@@ -9,11 +9,11 @@ use crate::{
         io::PxToneServiceIO,
         service::PxTone,
     },
-    rust_impl::woice::{
+    rust_impl::{unit::RPxToneUnit, woice::{
         RPxTonePTVCoordinatePoint, RPxTonePTVCoordinateWave, RPxTonePTVOvertoneWave,
         RPxTonePTVOvertoneWaveTone, RPxTonePTVWaveType, RPxToneVoicePCM, RPxToneVoicePCMError,
         RPxToneVoicePTV, RPxToneWoice, RPxToneWoicePCM, RPxToneWoiceType,
-    },
+    }},
 };
 
 use super::{
@@ -403,6 +403,23 @@ impl PxToneServiceIO for RPxTone {
                     c.read_exact(&mut comment_buf).unwrap();
                     let comment = String::from_utf8(comment_buf).unwrap();
                     self.set_comment(comment).unwrap();
+                },
+                b"assiUNIT" => {
+                    let index = c.read_u16::<LittleEndian>().unwrap();
+                    assert_eq!(index, self.units.len() as u16, "assiUNIT block out of order, this is unsupported for now");
+
+                    let rrr = c.read_u16::<LittleEndian>().unwrap();
+                    assert_eq!(rrr, 0);
+
+                    let mut name_buf = [0_u8; 16];
+                    c.read_exact(&mut name_buf).unwrap();
+                    let name = String::from_utf8(name_buf.into_iter().take_while(|c| *c != 0).collect()).unwrap();
+                    
+                    self.units.push(RPxToneUnit {
+                        selected: false,
+                        muted: false,
+                        name,
+                    });
                 },
                 b"pxtoneND" => {
                     break;
