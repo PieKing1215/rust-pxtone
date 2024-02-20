@@ -56,6 +56,7 @@ impl PxToneServiceIO for RPxTone {
     fn read_bytes(&mut self, bytes: &[u8]) -> Result<(), Self::Error> {
         self.event_list = RPxToneEventList::default();
         self.woices.clear();
+        self.units.clear();
 
         let mut c = Cursor::new(bytes);
 
