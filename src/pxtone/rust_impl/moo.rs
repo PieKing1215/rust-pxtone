@@ -8,7 +8,7 @@ use crate::{
         },
         moo::{AsMooRef, Moo},
         service::PxTone,
-        woice::{VoicePCM, Woice, WoiceType},
+        woice::{VoicePCM, VoicePTV, Woice, WoiceType},
     },
     util::{BoxOrMut, ZeroToOneF32},
 };
@@ -213,10 +213,6 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                     #[allow(clippy::for_kv_map)]
                     for (_unit, data) in &mut self.unit_data {
                         if let Some(on) = &mut data.on {
-                            if clock_ticks > (on.start + on.length) as f32 {
-                                data.on = None;
-                                continue;
-                            }
 
                             // let on_ticks = clock_ticks - on.start as f32;
                             // let on_secs = on_ticks / ticks_per_sec;
@@ -264,6 +260,12 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                                 #[allow(clippy::single_match)]
                                 match woice.woice_type() {
                                     WoiceType::PCM(pcm) => {
+
+                                        if clock_ticks > (on.start + on.length) as f32 {
+                                            data.on = None;
+                                            continue;
+                                        }
+
                                         for (ch, v) in v.iter_mut().enumerate() {
                                             let mut val = pcm.voice.sample(cycle, ch as _);
 
@@ -281,6 +283,12 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                                         }
                                     },
                                     WoiceType::OGGV(oggv) => {
+
+                                        if clock_ticks > (on.start + on.length) as f32 {
+                                            data.on = None;
+                                            continue;
+                                        }
+
                                         for (ch, v) in v.iter_mut().enumerate() {
                                             let mut val = oggv.voice.sample(cycle, ch as _);
 
@@ -298,7 +306,34 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                                         }
                                     },
                                     WoiceType::PTV(ptv) => {
+
+                                        let max_env_release_samples = ptv.voices.iter().map(|v| {
+                                            if v.envelope.tail_num > 0 {
+                                                v.envelope.points[v.envelope.head_num as usize].x * self.sample_rate / v.envelope.fps
+                                            } else {
+                                                0
+                                            }
+                                        }).max().unwrap_or(0);
+
+                                        // samples / samples/sec * ticks/seconds = ticks
+                                        let max_env_release_ticks = (max_env_release_samples as f32 / self.sample_rate as f32 * ticks_per_sec) as u32;
+
+                                        if clock_ticks > (on.start + on.length + max_env_release_ticks) as f32 {
+                                            data.on = None;
+                                            continue;
+                                        }
+
                                         for voice in &ptv.voices {
+
+                                            let env_release_samples = if voice.envelope.tail_num > 0 {
+                                                voice.envelope.points[voice.envelope.head_num as usize].x * self.sample_rate / voice.envelope.fps
+                                            } else {
+                                                0
+                                            };
+
+                                            // samples / samples/sec * ticks/seconds = ticks
+                                            let env_release_ticks = env_release_samples as f32 / self.sample_rate as f32 * ticks_per_sec;
+
                                             for (ch, v) in v.iter_mut().enumerate() {
                                                 let mut val = voice.sample(cycle, ch as _);
 
@@ -307,6 +342,10 @@ impl<'a> Moo<'a> for RPxToneMoo<'a> {
                                                     && cycle * 44100.0 < smooth_smps as f32
                                                 {
                                                     val *= (cycle * 44100.0) / smooth_smps as f32;
+                                                }
+
+                                                if clock_ticks > (on.start + on.length) as f32 {
+                                                    val *= (1.0 - (clock_ticks - (on.start + on.length) as f32) / env_release_ticks).clamp(0.0, 1.0);
                                                 }
 
                                                 *v += val

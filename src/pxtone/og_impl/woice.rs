@@ -1,18 +1,14 @@
 use std::{ffi::CString, slice, io::Read};
 
 use pxtone_sys::{
-    pxNOISEDESIGN_OSCILLATOR, pxNOISEDESIGN_UNIT, pxtnPOINT, pxtnVOICEUNIT, pxtnVOICEWAVE,
-    pxtnWoice, pxtnDescriptor, pxtnWOICETYPE_pxtnWOICE_PCM, pxtnWOICETYPE, pxtnWOICETYPE_pxtnWOICE_PTN, pxtnWOICETYPE_pxtnWOICE_PTV, pxtnWOICETYPE_pxtnWOICE_OGGV,
+    pxNOISEDESIGN_OSCILLATOR, pxNOISEDESIGN_UNIT, pxtnDescriptor, pxtnPOINT, pxtnVOICEENVELOPE, pxtnVOICEUNIT, pxtnVOICEWAVE, pxtnWOICETYPE, pxtnWOICETYPE_pxtnWOICE_OGGV, pxtnWOICETYPE_pxtnWOICE_PCM, pxtnWOICETYPE_pxtnWOICE_PTN, pxtnWOICETYPE_pxtnWOICE_PTV, pxtnWoice
 };
 
 use crate::{
     interface::{
         service::InvalidText,
         woice::{
-            HasWoices, PTNEnvelopePoint, PTNOscillator, PTNUnit, PTNWaveType, PTVCoordinateWave,
-            PTVCoordinateWavePoint, PTVOvertoneWave, PTVOvertoneWaveTone, PTVWaveType, SingleVoice,
-            Voice, VoiceOGGV, VoicePCM, VoicePTN, VoicePTV, Woice, WoiceOGGV, WoicePCM, WoicePTN,
-            WoicePTV, WoiceType, WoiceTypeMut, WoiceTypeRef, Woices, WoicesMut,
+            HasWoices, PTNEnvelopePoint, PTNOscillator, PTNUnit, PTNWaveType, PTVCoordinateWave, PTVCoordinateWavePoint, PTVEnvelope, PTVOvertoneWave, PTVOvertoneWaveTone, PTVWaveType, SingleVoice, Voice, VoiceOGGV, VoicePCM, VoicePTN, VoicePTV, Woice, WoiceOGGV, WoicePCM, WoicePTN, WoicePTV, WoiceType, WoiceTypeMut, WoiceTypeRef, Woices, WoicesMut
         },
     },
     pxtone::util::{BoxOrMut, BoxOrRef},
@@ -223,9 +219,37 @@ impl PTVOvertoneWave for pxtnVOICEWAVE {
     }
 }
 
+impl PTVEnvelope for pxtnVOICEENVELOPE {
+    type EnvelopePoint = pxtnPOINT;
+
+    fn fps(&self) -> u32 {
+        self.fps as _
+    }
+
+    fn head_num(&self) -> u32 {
+        self.head_num as _
+    }
+
+    fn body_num(&self) -> u32 {
+        self.body_num as _
+    }
+
+    fn tail_num(&self) -> u32 {
+        self.tail_num as _
+    }
+
+    fn points(&self) -> Vec<&Self::EnvelopePoint> {
+        let num = self.head_num + self.body_num + self.tail_num;
+        let slice = unsafe { slice::from_raw_parts(self.points, num as usize) };
+
+        slice.iter().collect()
+    }
+}
+
 impl VoicePTV for pxtnVOICEUNIT {
     type CoordinateWave = pxtnVOICEWAVE;
     type OvertoneWave = pxtnVOICEWAVE;
+    type Envelope = pxtnVOICEENVELOPE;
 
     fn wave(&self) -> PTVWaveType<Self::CoordinateWave, Self::OvertoneWave> {
         if self.type_ == pxtone_sys::pxtnVOICETYPE_pxtnVOICE_Coodinate {
@@ -233,6 +257,10 @@ impl VoicePTV for pxtnVOICEUNIT {
         } else {
             PTVWaveType::Overtone(&self.wave)
         }
+    }
+    
+    fn envelope(&self) -> &Self::Envelope {
+        todo!()
     }
 }
 

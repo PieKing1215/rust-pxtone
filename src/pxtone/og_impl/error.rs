@@ -73,6 +73,8 @@ impl Error {
     }
 
     pub fn from_raw(value: pxtnERR) -> Result<(), Error> {
+        // iirc this cast was needed on linux because pxtnERR was compiled as u32 (?)
+        #[allow(clippy::unnecessary_cast)]
         Self::from_i32(value as i32).map_or(Ok(()), Err)
     }
 }

@@ -12,9 +12,7 @@ use crate::{
     rust_impl::{
         unit::RPxToneUnit,
         woice::{
-            RPxTonePTVCoordinatePoint, RPxTonePTVCoordinateWave, RPxTonePTVOvertoneWave,
-            RPxTonePTVOvertoneWaveTone, RPxTonePTVWaveType, RPxToneVoicePCM, RPxToneVoicePCMError,
-            RPxToneVoicePTV, RPxToneWoice, RPxToneWoicePCM, RPxToneWoiceType,
+            RPXTonePTVEnvelope, RPxTonePTNEnvelopePoint, RPxTonePTVCoordinatePoint, RPxTonePTVCoordinateWave, RPxTonePTVOvertoneWave, RPxTonePTVOvertoneWaveTone, RPxTonePTVWaveType, RPxToneVoicePCM, RPxToneVoicePCMError, RPxToneVoicePTV, RPxToneWoice, RPxToneWoicePCM, RPxToneWoiceType
         },
     },
 };
@@ -336,34 +334,57 @@ impl PxToneServiceIO for RPxTone {
                                 _ => panic!("Invalid wave type"),
                             };
 
-                            let voice = RPxToneVoicePTV::new(
-                                basic_key as _,
-                                volume as _,
-                                pan as _,
-                                f32::from_le_bytes(tuning.to_le_bytes()),
-                                wave,
-                            );
-
-                            if data_flags & 0x2 != 0 {
-                                // TODO: envelope
-
-                                let _fps = v_r(&mut c).unwrap();
+                            #[allow(clippy::if_not_else)]
+                            let envelope = if data_flags & 0x2 != 0 {
+                                let fps = v_r(&mut c).unwrap();
                                 let head_num = v_r(&mut c).unwrap();
                                 let body_num = v_r(&mut c).unwrap();
                                 let tail_num = v_r(&mut c).unwrap();
 
-                                println!("{_fps}, {head_num}, {body_num}, {tail_num}");
+                                println!("{fps}, {head_num}, {body_num}, {tail_num}");
 
                                 assert_eq!(body_num, 0);
                                 assert_eq!(tail_num, 1);
 
                                 let num = head_num + body_num + tail_num;
 
-                                (0..num).map(|_| {
-                                    let _x = v_r(&mut c).unwrap();
-                                    let _y = v_r(&mut c).unwrap();
-                                }).for_each(drop);
-                            }
+                                let points: Vec<_> = (0..num).map(|_| {
+                                    let x = v_r(&mut c).unwrap();
+                                    let y = v_r(&mut c).unwrap();
+
+                                    RPxTonePTNEnvelopePoint {
+                                        x,
+                                        y: y as _,
+                                    }
+                                }).collect();
+
+                                println!("points = {points:?}");
+                                let env_release = if tail_num > 0 {
+                                    points[head_num as usize].x * 44100 / fps
+                                } else {
+                                    0
+                                };
+                                println!("env_release = {env_release}");
+
+                                RPXTonePTVEnvelope {
+                                    fps,
+                                    head_num,
+                                    body_num,
+                                    tail_num,
+                                    points,
+                                }
+                            } else {
+                                RPXTonePTVEnvelope::default()
+                            };
+
+                            let voice = RPxToneVoicePTV::new(
+                                basic_key as _,
+                                volume as _,
+                                pan as _,
+                                f32::from_le_bytes(tuning.to_le_bytes()),
+                                wave,
+                                envelope
+                            );
 
                             return Some(voice);
                         }

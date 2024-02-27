@@ -191,11 +191,27 @@ pub enum PTVWaveType<'a, C: PTVCoordinateWave, O: PTVOvertoneWave> {
     Overtone(&'a O),
 }
 
+pub trait PTVEnvelope {
+    type EnvelopePoint: PTNEnvelopePoint;
+    
+	fn fps(&self) -> u32;
+    
+	fn head_num(&self) -> u32;
+    
+	fn body_num(&self) -> u32;
+    
+	fn tail_num(&self) -> u32;
+    
+    fn points(&self) -> Vec<&Self::EnvelopePoint>;
+}
+
 pub trait VoicePTV: Voice {
     type CoordinateWave: PTVCoordinateWave;
     type OvertoneWave: PTVOvertoneWave;
+    type Envelope: PTVEnvelope;
 
     fn wave(&self) -> PTVWaveType<Self::CoordinateWave, Self::OvertoneWave>;
+    fn envelope(&self) -> &Self::Envelope;
 }
 
 #[repr(u8)]

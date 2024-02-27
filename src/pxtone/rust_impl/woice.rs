@@ -6,10 +6,7 @@ use crate::{
     interface::{
         service::InvalidText,
         woice::{
-            HasWoices, PTNEnvelopePoint, PTNOscillator, PTNUnit, PTNWaveType, PTVCoordinateWave,
-            PTVCoordinateWavePoint, PTVOvertoneWave, PTVOvertoneWaveTone, PTVWaveType, SingleVoice,
-            Voice, VoiceOGGV, VoicePCM, VoicePTN, VoicePTV, Woice, WoiceOGGV, WoicePCM, WoicePTN,
-            WoicePTV, WoiceTypeMut, WoiceTypeRef, Woices, WoicesMut,
+            HasWoices, PTNEnvelopePoint, PTNOscillator, PTNUnit, PTNWaveType, PTVCoordinateWave, PTVCoordinateWavePoint, PTVEnvelope, PTVOvertoneWave, PTVOvertoneWaveTone, PTVWaveType, SingleVoice, Voice, VoiceOGGV, VoicePCM, VoicePTN, VoicePTV, Woice, WoiceOGGV, WoicePCM, WoicePTN, WoicePTV, WoiceTypeMut, WoiceTypeRef, Woices, WoicesMut
         },
     },
     util::{BoxOrMut, BoxOrRef},
@@ -233,6 +230,7 @@ pub struct RPxToneVoicePTV {
     pub(crate) tuning: f32,
 
     pub(crate) wave: RPxTonePTVWaveType,
+    pub(crate) envelope: RPXTonePTVEnvelope,
 
     pub(crate) samples: Vec<f32>,
     pub(crate) ratio_to_a: f32,
@@ -246,6 +244,7 @@ impl RPxToneVoicePTV {
         pan: i32,
         tuning: f32,
         wave: RPxTonePTVWaveType,
+        envelope: RPXTonePTVEnvelope,
     ) -> Self {
         let sample_num = 400;
         let channels = 2;
@@ -279,6 +278,7 @@ impl RPxToneVoicePTV {
             pan,
             tuning,
             wave,
+            envelope,
             samples,
             ratio_to_a,
         }
@@ -327,12 +327,17 @@ impl Voice for RPxToneVoicePTV {
 impl VoicePTV for RPxToneVoicePTV {
     type CoordinateWave = RPxTonePTVCoordinateWave;
     type OvertoneWave = RPxTonePTVOvertoneWave;
+    type Envelope = RPXTonePTVEnvelope;
 
     fn wave(&self) -> PTVWaveType<Self::CoordinateWave, Self::OvertoneWave> {
         match &self.wave {
             RPxTonePTVWaveType::Coordinate(c) => PTVWaveType::Coordinate(c),
             RPxTonePTVWaveType::Overtone(o) => PTVWaveType::Overtone(o),
         }
+    }
+    
+    fn envelope(&self) -> &Self::Envelope {
+        &self.envelope
     }
 }
 
@@ -473,6 +478,39 @@ impl PTVOvertoneWaveTone for RPxTonePTVOvertoneWaveTone {
 
     fn amplitude(&self) -> i16 {
         self.amplitude
+    }
+}
+
+#[derive(Default)]
+pub struct RPXTonePTVEnvelope {
+    pub(crate) fps: u32,
+    pub(crate) head_num: u32,
+    pub(crate) body_num: u32,
+    pub(crate) tail_num: u32,
+    pub(crate) points: Vec<RPxTonePTNEnvelopePoint>,
+}
+
+impl PTVEnvelope for RPXTonePTVEnvelope {
+    type EnvelopePoint = RPxTonePTNEnvelopePoint;
+
+    fn fps(&self) -> u32 {
+        self.fps
+    }
+
+    fn head_num(&self) -> u32 {
+        self.head_num
+    }
+
+    fn body_num(&self) -> u32 {
+        self.body_num
+    }
+
+    fn tail_num(&self) -> u32 {
+        self.tail_num
+    }
+
+    fn points(&self) -> Vec<&Self::EnvelopePoint> {
+        self.points.iter().collect()
     }
 }
 
@@ -626,6 +664,7 @@ impl PTNUnit for RPxTonePTNUnit {
     }
 }
 
+#[derive(Debug)]
 pub struct RPxTonePTNEnvelopePoint {
     pub(crate) x: u32,
     pub(crate) y: u8,
