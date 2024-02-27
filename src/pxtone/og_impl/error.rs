@@ -85,7 +85,7 @@ impl fmt::Display for Error {
             let msg = CStr::from_ptr(pxtnError_get_string(self.to_i32() as pxtnERR))
                 .to_str()
                 .unwrap();
-            write!(f, "{}", msg)
+            write!(f, "{msg}")
         }
     }
 }

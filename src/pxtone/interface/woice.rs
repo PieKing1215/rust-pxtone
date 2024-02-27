@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, convert::Infallible, marker::PhantomData, fs::File, path::Path};
+use std::{borrow::Borrow, convert::Infallible, marker::PhantomData, path::Path};
 
 use crate::pxtone::util::{BoxOrMut, BoxOrRef};
 

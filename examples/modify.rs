@@ -46,7 +46,7 @@ fn do_stuff<
         .unwrap();
 
     // change project tempo
-    pxtone.set_beat_tempo(pxtone.beat_tempo() as f32 * 0.75);
+    pxtone.set_beat_tempo(pxtone.beat_tempo() * 0.75);
 
     // rename the first unit
     let mut units = pxtone.units_mut();

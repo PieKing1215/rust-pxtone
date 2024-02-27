@@ -8,7 +8,7 @@ use crate::{
         },
         moo::{AsMooRef, Moo},
         service::PxTone,
-        woice::{VoicePCM, VoicePTV, Woice, WoiceType},
+        woice::{VoicePCM, Woice, WoiceType},
     },
     util::{BoxOrMut, ZeroToOneF32},
 };

@@ -345,7 +345,7 @@ impl<T: Borrow<pxtnEvelist>> EventList for PxToneEventList<T> {
     fn iter(&self) -> Box<dyn Iterator<Item = &Self::Event>> {
         Box::new(
             EventLinkedList {
-                raw: self.evelist.borrow()._start as *const EVERECORD,
+                raw: self.evelist.borrow()._start.cast_const(),
             }
             .into_iter()
             .map(|e| e as &'static EVERECORD),

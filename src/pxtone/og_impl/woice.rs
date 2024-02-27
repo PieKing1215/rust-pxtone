@@ -1,4 +1,4 @@
-use std::{ffi::CString, slice, io::Read};
+use std::{ffi::CString, slice};
 
 use pxtone_sys::{
     pxNOISEDESIGN_OSCILLATOR, pxNOISEDESIGN_UNIT, pxtnDescriptor, pxtnPOINT, pxtnVOICEENVELOPE, pxtnVOICEUNIT, pxtnVOICEWAVE, pxtnWOICETYPE, pxtnWOICETYPE_pxtnWOICE_OGGV, pxtnWOICETYPE_pxtnWOICE_PCM, pxtnWOICETYPE_pxtnWOICE_PTN, pxtnWOICETYPE_pxtnWOICE_PTV, pxtnWoice
@@ -480,7 +480,7 @@ impl PxToneService<'_> {
         let mut descriptor = unsafe { pxtnDescriptor::new() };
         if !unsafe {
             descriptor.set_memory_r(
-                bytes.as_ptr() as *const _ as *mut std::ffi::c_void,
+                bytes.as_ptr().cast::<u8>() as *mut std::ffi::c_void,
                 bytes.len() as i32,
             )
         } {
