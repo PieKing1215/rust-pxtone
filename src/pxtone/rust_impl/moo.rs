@@ -46,7 +46,7 @@ struct UnitData {
     pan_volume: PanValue,
 }
 
-const DEFAULT_KEY: i32 = 24576;
+pub const DEFAULT_KEY: i32 = 24576;
 
 #[allow(clippy::derivable_impls)]
 impl Default for UnitData {
