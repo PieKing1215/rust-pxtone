@@ -16,7 +16,8 @@ For low-level bindings, see [rust-pxtone-sys](https://github.com/PieKing1215/rus
 
 The code is structured into an [`interface`](https://github.com/PieKing1215/rust-pxtone/tree/master/src/pxtone/interface) module and an [`og_impl`](https://github.com/PieKing1215/rust-pxtone/tree/master/src/pxtone/og_impl) module.<br>The idea is that the `interface` module contains all of the traits and structure that define the API, and the `og_impl` module contains an implementation of these traits using the original pxtone library via [rust-pxtone-sys](https://github.com/PieKing1215/rust-pxtone-sys).<br>
 (The `og_impl` module is controlled by the feature "og-impl" which is on by default)<br>
-The hope is that in the future, this will allow building a custom, entirely Rust implementation of pxtone which can implement this interface, making the backend interchangeable (though work has not started on this custom backend yet).
+
+Work is also being done on an entirely Rust implementation of this interface, located on the [`wip-rust-impl`](https://github.com/PieKing1215/rust-pxtone/tree/wip-rust-impl) branch, but it's still very WIP.
 
 ## License
 
